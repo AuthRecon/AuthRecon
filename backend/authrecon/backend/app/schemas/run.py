@@ -2,9 +2,10 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, AnyHttpUrl, Field, root_validator
+from pydantic import BaseModel, Field, model_validator
 
 from app.schemas.security_context import SecurityContext
+from app.schemas.types import HttpUrlStr
 
 
 class RunStatus(str, Enum):
@@ -16,7 +17,7 @@ class RunStatus(str, Enum):
 
 
 class RunSubmission(BaseModel):
-    target_url: AnyHttpUrl
+    target_url: HttpUrlStr
     credential_id: str | None = None
     username: str | None = None
     password: str | None = Field(default=None, min_length=1)
@@ -48,27 +49,20 @@ class RunSubmission(BaseModel):
     )
     options: dict[str, Any] = {}
 
-    @root_validator
-    def validate_credentials(cls, values: dict[str, Any]) -> dict[str, Any]:
-        recording_mode = values.get("recording_mode", "auto")
-
+    @model_validator(mode="after")
+    def validate_credentials(self) -> "RunSubmission":
         # Skip credential validation for manual recording mode
-        if recording_mode == "manual":
-            return values
+        if self.recording_mode == "manual":
+            return self
 
-        credential_id = values.get("credential_id")
-        username = values.get("username")
-        password = values.get("password")
-        save_name = values.get("save_credential_name")
-        roles = values.get("roles") or []
-        if credential_id:
-            if save_name:
+        if self.credential_id:
+            if self.save_credential_name:
                 raise ValueError("save_credential_name can only be used when submitting inline credentials.")
-            return values
-        if roles:
-            return values
-        if username and password:
-            return values
+            return self
+        if self.roles:
+            return self
+        if self.username and self.password:
+            return self
         raise ValueError("Provide either credential_id, roles, or username/password pair.")
 
 
@@ -106,7 +100,7 @@ class TechFingerprint(BaseModel):
 class RunSummary(BaseModel):
     id: str
     status: RunStatus
-    target_url: AnyHttpUrl
+    target_url: HttpUrlStr
     submitted_at: datetime
     auth_type: str | None = None
     operator: str | None = None
@@ -123,7 +117,7 @@ class RunRoleSummary(BaseModel):
     label: str | None = None
     username: str | None = None
     status: str | None = None
-    final_url: AnyHttpUrl | None = None
+    final_url: HttpUrlStr | None = None
     auth_type: str | None = None
     tags: list[str] = Field(default_factory=list)
     artifact_count: int = 0
@@ -136,7 +130,7 @@ class RunDetail(RunSummary):
     started_at: datetime | None = None
     finished_at: datetime | None = None
     duration_seconds: int | None = None
-    final_url: AnyHttpUrl | None = None
+    final_url: HttpUrlStr | None = None
     pattern: str | None = None
     llm_pattern: str | None = None
     session_cookies: list[dict[str, Any]] = Field(default_factory=list)

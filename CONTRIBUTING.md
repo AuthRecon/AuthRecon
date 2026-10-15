@@ -15,7 +15,7 @@ backend/authrecon/backend/        authrecon-api and authrecon-worker (FastAPI, R
   app/services/side_replay.py     "Verify": replays a .side in a clean browser
   alembic/versions/               database migrations
 backend/authrecon/cli/            `authrecon` CLI
-backend/authrecon-mcp/            MCP server (separate service: needs Pydantic v2, the API pins v1)
+backend/authrecon-mcp/            MCP server (separate service, reached through the portal)
 backend/loginlab/                 practice login targets (intentionally vulnerable)
 docker-compose.yml                full stack; docker-compose.dev.yml = hot-reload frontend
 install.sh                        installer
@@ -31,7 +31,7 @@ docker compose --profile loginlab up -d loginlab                              # 
 ```
 
 Things to know:
-- authrecon-api uses **Pydantic v1**: call `.dict()`, not `.model_dump()`.
+- All services use Pydantic v2. In authrecon-api, URL fields use `app.schemas.types.HttpUrlStr` (validated, kept exactly as given), not `AnyHttpUrl`, and a nullable field needs an explicit `= None` to be optional.
 - FastAPI 204 routes return `Response(status_code=204)`.
 - New migrations go in `backend/authrecon/backend/alembic/versions/`. After changing migrations or `install.sh`, test with a **fresh clone + `./install.sh`**, because upgrade-in-place hides fresh-install bugs.
 

@@ -38,8 +38,8 @@ router = APIRouter()
 
 
 class RoleHtmlContext(BaseModel):
-    role_slug: str | None
-    role_label: str | None
+    role_slug: str | None = None
+    role_label: str | None = None
     pre_auth_html: str | None = None
     post_auth_html: str | None = None
 
@@ -156,7 +156,7 @@ async def submit_ai_suggestion(
     suggestions = list(options.get("ai_suggestions", []))
     suggestions.append(
         {
-            **suggestion.dict(),  # Pydantic v1 (this service pins pydantic==1.10.15, not v2)
+            **suggestion.model_dump(),
             "submitted_at": datetime.now(timezone.utc).isoformat(),
             "submitted_by_profile_id": current_profile.id,
         }

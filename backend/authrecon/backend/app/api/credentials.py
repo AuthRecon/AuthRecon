@@ -34,7 +34,7 @@ async def list_credentials(
     current_profile: AuthReconProfile = Depends(get_current_active_profile),
 ) -> list[CredentialRead]:
     credentials = list_credentials_for_user(db, current_profile)
-    return [CredentialRead.from_orm(item) for item in credentials]
+    return [CredentialRead.model_validate(item) for item in credentials]
 
 
 @router.post("", response_model=CredentialRead, status_code=status.HTTP_201_CREATED)
@@ -44,7 +44,7 @@ async def create_stored_credential(
     current_profile: AuthReconProfile = Depends(get_current_active_profile),
 ) -> CredentialRead:
     credential = create_credential(db, owner=current_profile, payload=payload)
-    return CredentialRead.from_orm(credential)
+    return CredentialRead.model_validate(credential)
 
 
 @router.patch("/{credential_id}", response_model=CredentialRead)
@@ -60,7 +60,7 @@ async def update_stored_credential(
     _ensure_can_access(current_profile, credential)
 
     updated = update_credential(db, credential=credential, actor=current_profile, payload=payload)
-    return CredentialRead.from_orm(updated)
+    return CredentialRead.model_validate(updated)
 
 
 @router.delete("/{credential_id}", status_code=status.HTTP_204_NO_CONTENT)

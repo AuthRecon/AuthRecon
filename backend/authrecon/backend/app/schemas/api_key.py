@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class APIKeyCreate(BaseModel):
@@ -41,7 +41,7 @@ class APIKeyCreated(BaseModel):
         description="Display prefix for identification (e.g., 'ak_...xJ7k')"
     )
     created_at: datetime
-    expires_at: datetime | None
+    expires_at: datetime | None = None
 
 
 class APIKeyRead(BaseModel):
@@ -54,13 +54,12 @@ class APIKeyRead(BaseModel):
         description="Display prefix for identification (e.g., 'ak_...xJ7k')"
     )
     is_revoked: bool
-    revoked_at: datetime | None
+    revoked_at: datetime | None = None
     created_at: datetime
-    expires_at: datetime | None
-    last_used_at: datetime | None
+    expires_at: datetime | None = None
+    last_used_at: datetime | None = None
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class APIKeyRevoke(BaseModel):
@@ -71,5 +70,4 @@ class APIKeyRevoke(BaseModel):
     is_revoked: bool
     revoked_at: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)

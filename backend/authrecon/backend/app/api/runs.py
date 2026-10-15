@@ -9,7 +9,7 @@ import asyncio
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, status
 from fastapi.concurrency import run_in_threadpool
-from pydantic import AnyHttpUrl, BaseModel
+from pydantic import BaseModel
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -33,6 +33,7 @@ from app.schemas.run import (
     RunRoleSummary,
 )
 from app.schemas.credential import CredentialCreate
+from app.schemas.types import HttpUrlStr
 from app.services.auth_detection import detect_auth_type
 from app.services.credentials import create_credential, get_credential, touch_usage
 from app.services.queue import get_queue
@@ -176,7 +177,7 @@ def _run_to_detail(run: Run, db: Session) -> RunDetail:
     js_frameworks: list[str] = []
     if isinstance(run.tech_fingerprint, dict) and run.tech_fingerprint:
         try:
-            fingerprint = TechFingerprint.parse_obj(run.tech_fingerprint)
+            fingerprint = TechFingerprint.model_validate(run.tech_fingerprint)
             js_frameworks = list(fingerprint.js_frameworks)
         except Exception:  # pragma: no cover - defensive parsing
             logger.debug("Failed to parse tech fingerprint for run %s", run.id, exc_info=True)
@@ -204,13 +205,13 @@ def _run_to_detail(run: Run, db: Session) -> RunDetail:
             # any later commit could write it back to the database.
             context_copy = deepcopy(run.security_context)
             _decrypt_security_context_cookies(context_copy, db, run)
-            security_context = SecurityContext.parse_obj(context_copy)
+            security_context = SecurityContext.model_validate(context_copy)
         except Exception:
             logger.debug("Failed to parse security_context for run %s", run.id, exc_info=True)
             security_context = None
 
     return RunDetail(
-        **_run_to_summary(run).dict(),
+        **_run_to_summary(run).model_dump(),
         started_at=run.started_at,
         finished_at=run.finished_at,
         duration_seconds=duration,
@@ -314,7 +315,7 @@ def _get_run_for_user(run_id: str, db: Session, current_profile: AuthReconProfil
 
 
 class DetectRequest(BaseModel):
-    target_url: AnyHttpUrl
+    target_url: HttpUrlStr
     login_hint: str | None = None
 
 

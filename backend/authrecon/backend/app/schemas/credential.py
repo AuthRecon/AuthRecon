@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class CredentialBase(BaseModel):
@@ -28,11 +28,10 @@ class CredentialUpdate(BaseModel):
 
 class CredentialRead(CredentialBase):
     id: str
-    owner_user_id: str | None
+    owner_user_id: str | None = None
     is_archived: bool
     created_at: datetime
     updated_at: datetime
-    last_used_at: datetime | None
+    last_used_at: datetime | None = None
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)

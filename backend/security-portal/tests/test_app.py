@@ -87,4 +87,4 @@ def test_initial_setup_and_login_flow(tmp_path) -> None:
         assert me.status_code == 200 and me.json()["is_admin"] is True
 
         # The legacy cookie form routes are gone.
-        assert client.get("/login", allow_redirects=False).status_code == 410
+        assert client.get("/login", follow_redirects=False).status_code == 410

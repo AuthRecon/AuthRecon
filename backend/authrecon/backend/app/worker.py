@@ -1209,7 +1209,7 @@ def _run_basic_variant(
         result.session_cookies = _normalize_cookies_payload(automation.cookies)
         # Preserve js_secrets if already set, then merge automation.security_context
         js_secrets_backup = result.security_context.get("js_secrets") if isinstance(result.security_context, dict) else None
-        result.security_context = json.loads(automation.security_context.json()) if automation.security_context else None
+        result.security_context = automation.security_context.model_dump(mode="json") if automation.security_context else None
         if js_secrets_backup:
             if result.security_context is None:
                 result.security_context = {}
@@ -1313,7 +1313,7 @@ def _run_azure_variant(
         result.session_cookies = _normalize_cookies_payload(automation.cookies)
         # Preserve js_secrets if already set, then merge automation.security_context
         js_secrets_backup = result.security_context.get("js_secrets") if isinstance(result.security_context, dict) else None
-        result.security_context = json.loads(automation.security_context.json()) if automation.security_context else None
+        result.security_context = automation.security_context.model_dump(mode="json") if automation.security_context else None
         if js_secrets_backup:
             if result.security_context is None:
                 result.security_context = {}
@@ -1460,7 +1460,7 @@ def _run_saml_variant(
         result.session_cookies = _normalize_cookies_payload(automation.cookies)
         # Preserve js_secrets if already set, then merge automation.security_context
         js_secrets_backup = result.security_context.get("js_secrets") if isinstance(result.security_context, dict) else None
-        result.security_context = json.loads(automation.security_context.json()) if automation.security_context else None
+        result.security_context = automation.security_context.model_dump(mode="json") if automation.security_context else None
         if js_secrets_backup:
             if result.security_context is None:
                 result.security_context = {}
@@ -1841,7 +1841,7 @@ def _run_okta_variant(
         result.session_cookies = _normalize_cookies_payload(automation.cookies)
         # Preserve js_secrets if already set, then merge automation.security_context
         js_secrets_backup = result.security_context.get("js_secrets") if isinstance(result.security_context, dict) else None
-        result.security_context = json.loads(automation.security_context.json()) if automation.security_context else None
+        result.security_context = automation.security_context.model_dump(mode="json") if automation.security_context else None
         if js_secrets_backup:
             if result.security_context is None:
                 result.security_context = {}
@@ -2008,7 +2008,7 @@ def _run_ldap_variant(
         result.session_cookies = _normalize_cookies_payload(automation.cookies)
         # Preserve js_secrets if already set, then merge automation.security_context
         js_secrets_backup = result.security_context.get("js_secrets") if isinstance(result.security_context, dict) else None
-        result.security_context = json.loads(automation.security_context.json()) if automation.security_context else None
+        result.security_context = automation.security_context.model_dump(mode="json") if automation.security_context else None
         if js_secrets_backup:
             if result.security_context is None:
                 result.security_context = {}
@@ -2330,7 +2330,7 @@ def _run_oauth_variant(
         result.session_cookies = _normalize_cookies_payload(automation.cookies)
         # Preserve js_secrets if already set, then merge automation.security_context
         js_secrets_backup = result.security_context.get("js_secrets") if isinstance(result.security_context, dict) else None
-        result.security_context = json.loads(automation.security_context.json()) if automation.security_context else None
+        result.security_context = automation.security_context.model_dump(mode="json") if automation.security_context else None
         if js_secrets_backup:
             if result.security_context is None:
                 result.security_context = {}
@@ -2642,7 +2642,7 @@ def _run_form_variant(
         result.session_cookies = _normalize_cookies_payload(automation.cookies)
         # Preserve js_secrets if already set, then merge automation.security_context
         js_secrets_backup = result.security_context.get("js_secrets") if isinstance(result.security_context, dict) else None
-        result.security_context = json.loads(automation.security_context.json()) if automation.security_context else None
+        result.security_context = automation.security_context.model_dump(mode="json") if automation.security_context else None
         if js_secrets_backup:
             if result.security_context is None:
                 result.security_context = {}
@@ -2840,7 +2840,7 @@ def _run_two_step_variant(
         result.session_cookies = _normalize_cookies_payload(automation.cookies)
         # Preserve js_secrets if already set, then merge automation.security_context
         js_secrets_backup = result.security_context.get("js_secrets") if isinstance(result.security_context, dict) else None
-        result.security_context = json.loads(automation.security_context.json()) if automation.security_context else None
+        result.security_context = automation.security_context.model_dump(mode="json") if automation.security_context else None
         if js_secrets_backup:
             if result.security_context is None:
                 result.security_context = {}
@@ -2958,7 +2958,7 @@ def _run_two_step_variant(
         result.session_cookies = _normalize_cookies_payload(automation.cookies)
         # Preserve js_secrets if already set, then merge automation.security_context
         js_secrets_backup = result.security_context.get("js_secrets") if isinstance(result.security_context, dict) else None
-        result.security_context = json.loads(automation.security_context.json()) if automation.security_context else None
+        result.security_context = automation.security_context.model_dump(mode="json") if automation.security_context else None
         if js_secrets_backup:
             if result.security_context is None:
                 result.security_context = {}

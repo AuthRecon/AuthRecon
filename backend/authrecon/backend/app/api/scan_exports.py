@@ -15,7 +15,7 @@ from typing import Any
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -42,8 +42,7 @@ class ScanExportOut(BaseModel):
     parsed_at: datetime | None = None
     owner_profile_id: str
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 def _storage_namespace(export_id: str) -> str:

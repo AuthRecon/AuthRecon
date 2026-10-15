@@ -13,7 +13,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 # ============================================================================
@@ -584,16 +584,15 @@ class SecurityContext(BaseModel):
     extracted_at: datetime
     extraction_version: str = "1.0.0"  # Schema version
 
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "cookies": {"total_count": 3, "security_score": 75.0},
-                "security_headers": {
-                    "security": {"security_score": 85.0},
-                    "server": "nginx/1.20.0",
-                },
-                "overall_security_score": 80.0,
-                "extracted_at": "2025-11-29T12:00:00Z",
-                "extraction_version": "1.0.0",
-            }
+    model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "cookies": {"total_count": 3, "security_score": 75.0},
+            "security_headers": {
+                "security": {"security_score": 85.0},
+                "server": "nginx/1.20.0",
+            },
+            "overall_security_score": 80.0,
+            "extracted_at": "2025-11-29T12:00:00Z",
+            "extraction_version": "1.0.0",
         }
+    })

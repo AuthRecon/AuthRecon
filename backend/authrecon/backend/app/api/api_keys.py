@@ -167,7 +167,7 @@ async def list_api_keys(
         APIKey.profile_id == current_profile.id
     ).order_by(APIKey.created_at.desc()).all()
 
-    return [APIKeyRead.from_orm(key) for key in api_keys]
+    return [APIKeyRead.model_validate(key) for key in api_keys]
 
 
 @router.delete("/{key_id}", response_model=APIKeyRevoke)
@@ -216,4 +216,4 @@ async def revoke_api_key(
     db.commit()
     db.refresh(api_key)
 
-    return APIKeyRevoke.from_orm(api_key)
+    return APIKeyRevoke.model_validate(api_key)

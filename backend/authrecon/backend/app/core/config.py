@@ -1,57 +1,64 @@
 import json
 from functools import lru_cache
 from pathlib import Path
-from typing import List
+from typing import Annotated, List
 
-from pydantic import AnyUrl, BaseSettings, Field, validator
+from pydantic import AnyUrl, Field, TypeAdapter, ValidationInfo, field_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 # Release version; must match the repo-root VERSION file (backend/authrecon/backend/tests/test_version.py).
-APP_VERSION = "0.9.1"
+APP_VERSION = "0.10.0"
+
+_ANY_URL = TypeAdapter(AnyUrl)
 
 
 class Settings(BaseSettings):
+    # Each field is read from the environment variable of the same name
+    # (case-insensitive), except artifact_storage_dir (ARTIFACTS_DIR).
+    # extra="ignore": the .env file also holds keys other code reads (as v1 did).
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", case_sensitive=False, extra="ignore")
+
     app_name: str = "Auth Recon API"
     api_v1_prefix: str = "/api/v1"
     environment: str = "development"
-    secret_key: str = Field("change-me", env="SECRET_KEY")
-    jwt_secret_key: str = Field("change-me", env="JWT_SECRET_KEY")
-    jwt_algorithm: str = Field("HS256", env="JWT_ALGORITHM")
-    access_token_expire_minutes: int = Field(60, env="ACCESS_TOKEN_EXPIRE_MINUTES")
-    credential_encryption_key: str | None = Field(None, env="CREDENTIAL_ENCRYPTION_KEY")
+    secret_key: str = "change-me"
+    jwt_secret_key: str = "change-me"
+    jwt_algorithm: str = "HS256"
+    access_token_expire_minutes: int = 60
+    credential_encryption_key: str | None = None
 
-    # CORS / security knobs (configured via ALLOWED_ORIGINS environment variable)
-    allowed_origins: List[str] = Field(
+    # CORS: a JSON list or a comma-separated string. NoDecode stops
+    # pydantic-settings from requiring JSON, so the validator below sees the raw value.
+    allowed_origins: Annotated[List[str], NoDecode] = Field(
         default=["http://localhost:5173"],
-        env="ALLOWED_ORIGINS",
-        description="Comma-separated list of allowed CORS origins"
+        description="Comma-separated list of allowed CORS origins",
     )
 
     # Placeholder storage backing
     artifact_bucket: str = "authrecon-artifacts"
-    artifact_storage_dir: Path = Field(Path("/app/data/artifacts"), env="ARTIFACTS_DIR")
+    artifact_storage_dir: Path = Field(Path("/app/data/artifacts"), validation_alias="ARTIFACTS_DIR")
 
-    portal_api_secret: str = Field("change-me", env="PORTAL_API_SECRET")
-    portal_service_url: AnyUrl = Field("http://portal:9000", env="PORTAL_SERVICE_URL")
-    portal_service_timeout: int = Field(5, env="PORTAL_SERVICE_TIMEOUT")
-    portal_service_id: str = Field("auth_recon", env="PORTAL_SERVICE_ID")
+    portal_api_secret: str = "change-me"
+    # URLs stay plain strings (validated as URLs, passed on exactly as written):
+    # SQLAlchemy and Redis take strings, and pydantic v2's URL type would
+    # normalise them (e.g. add a trailing slash).
+    portal_service_url: str = "http://portal:9000"
+    portal_service_timeout: int = 5
+    portal_service_id: str = "auth_recon"
 
     # Infrastructure
-    database_url: AnyUrl = Field(
-        "postgresql+psycopg2://authrecon:authrecon@localhost:5432/authrecon",
-        env="DATABASE_URL",
-    )
-    redis_url: AnyUrl = Field(
-        "redis://:authrecon@localhost:6379/0",
-        env="REDIS_URL",
-    )
+    database_url: str = "postgresql+psycopg2://authrecon:authrecon@localhost:5432/authrecon"
+    redis_url: str = "redis://:authrecon@localhost:6379/0"
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
+    @field_validator("portal_service_url", "database_url", "redis_url")
+    @classmethod
+    def validate_url(cls, value: str) -> str:
+        _ANY_URL.validate_python(value)
+        return value
 
-    @validator("allowed_origins", pre=True)
+    @field_validator("allowed_origins", mode="before")
+    @classmethod
     def parse_allowed_origins(cls, value: str | list[str]) -> list[str]:
         if isinstance(value, str):
             stripped = value.strip()
@@ -67,13 +74,14 @@ class Settings(BaseSettings):
             return [origin.strip() for origin in stripped.split(",") if origin.strip()]
         return value
 
-    @validator("secret_key", "jwt_secret_key", "portal_api_secret")
-    def reject_default_secrets(cls, value: str, field) -> str:
+    @field_validator("secret_key", "jwt_secret_key", "portal_api_secret")
+    @classmethod
+    def reject_default_secrets(cls, value: str, info: ValidationInfo) -> str:
         # Fail closed: never sign/verify tokens or derive encryption keys from a
         # publicly-known default. install.sh / setup-env.sh must supply real values.
         if not value or value in {"change-me", "CHANGE_ME_GENERATE_RANDOM_KEY", "dev-portal-secret"}:
             raise ValueError(
-                f"{field.name} must be set to a strong random value, not a known default. "
+                f"{info.field_name} must be set to a strong random value, not a known default. "
                 "Run install.sh / setup-env.sh or set it in the service .env."
             )
         return value
