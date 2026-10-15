@@ -8,6 +8,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.frontend
+      additional_contexts:
+        certs: ./certs  # extra CA certificates, usually none (certs/README.md)
       args:
         VITE_API_URL: ${VITE_API_URL:-http://localhost:9000}
         VITE_PORTAL_API: ${VITE_PORTAL_API:-http://localhost:9000}
@@ -22,6 +24,8 @@ services:
     restart: unless-stopped
     build:
       context: ./backend/security-portal
+      additional_contexts:
+        certs: ./certs  # extra CA certificates, usually none (certs/README.md)
     env_file:
       - ./backend/security-portal/.env
     environment:
@@ -46,6 +50,8 @@ services:
     restart: unless-stopped
     build:
       context: ./backend/authrecon/backend
+      additional_contexts:
+        certs: ./certs  # extra CA certificates, usually none (certs/README.md)
     ports:
       - "8001:8000"
     env_file:
@@ -72,6 +78,8 @@ services:
   authrecon-worker:
     build:
       context: ./backend/authrecon/backend
+      additional_contexts:
+        certs: ./certs  # extra CA certificates, usually none (certs/README.md)
     restart: unless-stopped
     shm_size: '256m'
     env_file:
@@ -131,6 +139,8 @@ services:
     restart: unless-stopped
     build:
       context: ./backend/authrecon-mcp
+      additional_contexts:
+        certs: ./certs  # extra CA certificates, usually none (certs/README.md)
     environment:
       AUTHRECON_API_URL: http://authrecon-api:8000/api/v1
     depends_on:
@@ -141,6 +151,8 @@ services:
   loginlab:
     build:
       context: ./backend/loginlab
+      additional_contexts:
+        certs: ./certs  # extra CA certificates, usually none (certs/README.md)
     environment:
       PORT: 5500
       LOGINLAB_SERVICE_TOKEN: ${LOGINLAB_SERVICE_TOKEN:?Set LOGINLAB_SERVICE_TOKEN in .env before starting (install.sh generates it)}

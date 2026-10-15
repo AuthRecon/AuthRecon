@@ -8,9 +8,10 @@ Self-hosted, runs in Docker, no cloud services. Version: see [`VERSION`](./VERSI
 
 ## Quick start
 
-Prerequisites: Docker 20.10+ with Compose v2, `git`, `python3`, `openssl`, `curl`, 8 GB RAM, 10 GB free disk.
+Prerequisites: Docker 23.0+ with Compose 2.17+, `git`, `python3`, `openssl`, `curl`, 8 GB RAM, 10 GB free disk.
 - **Linux:** Docker Engine + the compose plugin.
 - **macOS (Intel or Apple Silicon):** Docker Desktop with at least 8 GB of memory (Settings › Resources). `git` and `python3` come with the Xcode Command Line Tools (`xcode-select --install`).
+- **Corporate network:** if your network inspects TLS or blocks public package registries, the installer detects it and tells you what to pass: `--ca-file` for a corporate root certificate, `--pip-index`/`--npmrc` for a private mirror. See [Corporate networks](./ADMIN_GUIDE.md#corporate-networks-tls-inspection-and-private-mirrors).
 
 ```bash
 git clone https://github.com/AuthRecon/AuthRecon.git

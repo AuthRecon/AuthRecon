@@ -82,6 +82,13 @@ users.json
 
 # Secrets and encryption keys
 secrets/
+# Build-time mirror credentials (docker-compose.mirror.yml)
+.build-secrets/
+# Site-specific CA certificates: keep only the README
+certs/*
+!certs/README.md
+# Personal compose overrides (auto-merged by docker compose)
+docker-compose.override.yml
 *.key
 *.pem
 !*.key.example

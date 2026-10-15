@@ -7,7 +7,14 @@
 #   sudo ./install.sh   # otherwise
 #   FORCE_REINSTALL=1 ./install.sh   # over an existing install (see ADMIN_GUIDE.md)
 #
-# Requirements: Docker 20.10+ with Compose v2, python3, openssl, curl.
+# Behind a TLS-inspecting proxy or with a private package mirror
+# (see "Corporate networks" in ADMIN_GUIDE.md):
+#   ./install.sh --ca-file /path/to/root-ca.pem   # trust a corporate root CA (repeatable)
+#   ./install.sh --pip-index                      # prompts for a private PyPI index URL
+#   ./install.sh --npmrc /path/to/.npmrc          # private npm registry settings
+#   ./install.sh --skip-network-check             # skip the pre-build download check
+#
+# Requirements: Docker 23.0+ with Compose 2.17+, python3, openssl, curl.
 #
 
 set -euo pipefail
@@ -17,8 +24,9 @@ set -euo pipefail
 # =============================================================================
 
 VERSION="$(cat "$(dirname "${BASH_SOURCE[0]}")/VERSION" 2>/dev/null || echo unknown)"
-MIN_DOCKER_VERSION="20.10"
-MIN_COMPOSE_VERSION="2.0"
+# Compose 2.17 added build additional_contexts (used for certs/).
+MIN_DOCKER_VERSION="23.0"
+MIN_COMPOSE_VERSION="2.17"
 
 # Colors for output
 RED='\033[0;31m'
@@ -31,6 +39,18 @@ NC='\033[0m' # No Color
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_DIR="${SCRIPT_DIR}/backend"
 DATA_DIR="${SCRIPT_DIR}/data"
+CERTS_DIR="${SCRIPT_DIR}/certs"
+BUILD_SECRETS_DIR="${SCRIPT_DIR}/.build-secrets"
+
+# Command-line options (parse_args)
+CA_FILES=()
+ASK_PIP_INDEX=0
+NPMRC_FILE=""
+SKIP_NETWORK_CHECK=0
+# Set by check_existing_install / configure_build_network
+INSTALL_PREEXISTED=0
+USE_MIRROR=0
+ROLLBACK_ARMED=0
 
 # =============================================================================
 # HELPER FUNCTIONS
@@ -103,6 +123,36 @@ version_ge() {
 # First x.y.z in a string (portable: no `grep -P`, which macOS lacks).
 first_version() {
     sed -nE 's/[^0-9]*([0-9]+\.[0-9]+(\.[0-9]+)?).*/\1/p' | head -1
+}
+
+usage() {
+    sed -n '3,19p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+}
+
+parse_args() {
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --ca-file)
+                [[ $# -ge 2 ]] || { log_error "--ca-file needs a path"; exit 1; }
+                CA_FILES+=("$2"); shift 2 ;;
+            --ca-file=*) CA_FILES+=("${1#*=}"); shift ;;
+            --pip-index) ASK_PIP_INDEX=1; shift ;;
+            --npmrc)
+                [[ $# -ge 2 ]] || { log_error "--npmrc needs a path"; exit 1; }
+                NPMRC_FILE="$2"; shift 2 ;;
+            --npmrc=*) NPMRC_FILE="${1#*=}"; shift ;;
+            --skip-network-check) SKIP_NETWORK_CHECK=1; shift ;;
+            -h|--help) usage; exit 0 ;;
+            *) log_error "Unknown option: $1"; usage; exit 1 ;;
+        esac
+    done
+}
+
+# Compose project name (prefix of this checkout's volumes): the directory
+# name unless COMPOSE_PROJECT_NAME is set.
+compose_project() {
+    local project="${COMPOSE_PROJECT_NAME:-$(basename "${SCRIPT_DIR}")}"
+    echo "${project}" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9_-'
 }
 
 # =============================================================================
@@ -232,13 +282,12 @@ check_existing_install() {
     local found_volume=0
     # Only this checkout's volume (compose prefixes volumes with the project
     # name, which defaults to the directory name), not other installs.
-    local project="${COMPOSE_PROJECT_NAME:-$(basename "${SCRIPT_DIR}")}"
-    project="$(echo "${project}" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9_-')"
-    if docker volume ls --format '{{.Name}}' 2>/dev/null | grep -qx "${project}_authrecon_db"; then
+    if docker volume ls --format '{{.Name}}' 2>/dev/null | grep -qx "$(compose_project)_authrecon_db"; then
         found_volume=1
     fi
 
     if [[ ${found_env} -eq 1 || ${found_volume} -eq 1 ]]; then
+        INSTALL_PREEXISTED=1
         log_warning "An existing deployment was detected (env file and/or authrecon_db volume already present)."
         log_warning "Re-running this installer generates BRAND NEW random secrets, but the existing"
         log_warning "Postgres volume still has the OLD passwords baked in — every service would fail"
@@ -256,11 +305,252 @@ check_existing_install() {
 }
 
 # =============================================================================
+# CORPORATE NETWORKS (optional: extra CA certificates, private package mirror)
+# =============================================================================
+
+# Copy --ca-file certificates into certs/ and the mirror settings into
+# .build-secrets/. Neither is needed on an ordinary network.
+configure_build_network() {
+    local f name
+    mkdir -p "${CERTS_DIR}"   # the build's `certs` context must exist, even empty
+    for f in "${CA_FILES[@]+"${CA_FILES[@]}"}"; do
+        [[ -f "$f" ]] || { log_error "CA file not found: $f"; exit 1; }
+        if ! grep -q "BEGIN CERTIFICATE" "$f"; then
+            log_error "$f is not a PEM certificate. If it is DER (binary), convert it first:"
+            log_info "  openssl x509 -inform der -in \"$f\" -out root-ca.pem"
+            exit 1
+        fi
+        name="$(basename "$f")"
+        name="${name%.*}.crt"
+        cp "$f" "${CERTS_DIR}/${name}"
+        chmod 644 "${CERTS_DIR}/${name}"
+        own_generated_file "${CERTS_DIR}/${name}"
+        log_success "CA certificate added: certs/${name}"
+    done
+
+    if [[ ${ASK_PIP_INDEX} -eq 1 || -n "${NPMRC_FILE}" ]]; then
+        # umask: the directory and files are created owner-only.
+        ( umask 077; mkdir -p "${BUILD_SECRETS_DIR}" )
+        chmod 700 "${BUILD_SECRETS_DIR}"
+        own_generated_file "${BUILD_SECRETS_DIR}"
+    fi
+
+    if [[ ${ASK_PIP_INDEX} -eq 1 ]]; then
+        # Read without echo, so a token in the URL stays out of the terminal,
+        # shell history and the process list.
+        local url authority
+        read -r -s -p "Private PyPI index URL (e.g. https://USER:TOKEN@mirror.example.com/api/pypi/pypi/simple): " url
+        echo ""
+        url="$(printf '%s' "${url}" | tr -d '[:space:]')"
+        if [[ ! "${url}" =~ ^https?:// ]]; then
+            log_error "The index URL must start with https:// (or http://)"
+            exit 1
+        fi
+        authority="${url#*://}"
+        authority="${authority%%/*}"
+        if [[ "${authority}" == *@*@* ]]; then
+            log_error "The URL contains more than one '@'. Encode '@' inside the username as %40,"
+            log_info "  e.g. https://jane%40example.com:TOKEN@mirror.example.com/..."
+            exit 1
+        fi
+        [[ "${url}" == http://* ]] && log_warning "The index URL uses http://: credentials in it travel unencrypted"
+        ( umask 077; printf '%s\n' "${url}" > "${BUILD_SECRETS_DIR}/pip_index_url" )
+        own_generated_file "${BUILD_SECRETS_DIR}/pip_index_url"
+        log_success "Private PyPI index saved to .build-secrets/pip_index_url"
+    fi
+
+    if [[ -n "${NPMRC_FILE}" ]]; then
+        [[ -f "${NPMRC_FILE}" ]] || { log_error "npmrc file not found: ${NPMRC_FILE}"; exit 1; }
+        ( umask 077; cp "${NPMRC_FILE}" "${BUILD_SECRETS_DIR}/npmrc" )
+        chmod 600 "${BUILD_SECRETS_DIR}/npmrc"
+        own_generated_file "${BUILD_SECRETS_DIR}/npmrc"
+        log_success "npm settings saved to .build-secrets/npmrc"
+    fi
+
+    # Use the mirror whenever either setting exists, including ones written by
+    # hand. docker-compose.mirror.yml needs both files, so create the missing
+    # one empty (an empty setting means "use the public registry").
+    if [[ -s "${BUILD_SECRETS_DIR}/pip_index_url" || -s "${BUILD_SECRETS_DIR}/npmrc" ]]; then
+        local s
+        for s in pip_index_url npmrc; do
+            if [[ ! -e "${BUILD_SECRETS_DIR}/${s}" ]]; then
+                ( umask 077; : > "${BUILD_SECRETS_DIR}/${s}" )
+                own_generated_file "${BUILD_SECRETS_DIR}/${s}"
+            fi
+        done
+        USE_MIRROR=1
+        log_info "Private package mirror enabled (docker-compose.mirror.yml)"
+    fi
+
+    local count
+    count=$(find "${CERTS_DIR}" -maxdepth 1 -type f \( -name '*.crt' -o -name '*.pem' \) 2>/dev/null | wc -l | tr -d ' ')
+    [[ ${count} -gt 0 ]] && log_info "Extra CA certificates in certs/: ${count}"
+    return 0
+}
+
+# Fetch a package the same way the build will, in throwaway containers, so a
+# blocked or TLS-inspected network fails here in seconds instead of halfway
+# through a long build. Uses the same base images as the build.
+check_build_network() {
+    if [[ ${SKIP_NETWORK_CHECK} -eq 1 ]]; then
+        log_warning "Skipping the package download check (--skip-network-check)"
+        return 0
+    fi
+    log_info "Checking that the build can download packages..."
+
+    local pip_secret=() npmrc_mount=()
+    [[ -s "${BUILD_SECRETS_DIR}/pip_index_url" ]] && \
+        pip_secret=(-v "${BUILD_SECRETS_DIR}/pip_index_url:/run/secrets/pip_index_url:ro")
+    [[ -s "${BUILD_SECRETS_DIR}/npmrc" ]] && \
+        npmrc_mount=(-v "${BUILD_SECRETS_DIR}/npmrc:/npmrc:ro")
+
+    local result
+    result="$(docker run --rm -i -v "${CERTS_DIR}:/certs:ro" \
+        "${pip_secret[@]+"${pip_secret[@]}"}" python:3.12-slim python - 2>&1 <<'PYCHECK'
+import base64, glob, os, ssl, sys, urllib.error, urllib.request
+from html.parser import HTMLParser
+from urllib.parse import unquote, urljoin, urlsplit, urlunsplit
+
+def done(kind, detail=""):
+    print(kind, detail)
+    sys.exit(0)
+
+ctx = ssl.create_default_context()
+for f in sorted(glob.glob("/certs/*.crt") + glob.glob("/certs/*.pem")):
+    try:
+        ctx.load_verify_locations(cafile=f)
+    except (ssl.SSLError, OSError, ValueError):
+        done("BADCERT", "certs/" + os.path.basename(f))
+
+index = "https://pypi.org/simple/"
+try:
+    with open("/run/secrets/pip_index_url") as fh:
+        index = fh.read().strip() or index
+except OSError:
+    pass
+
+# Send mirror credentials as a header and keep them out of every message.
+parts = urlsplit(index)
+host = parts.hostname or ""
+auth = None
+if parts.username is not None:
+    pair = unquote(parts.username) + ":" + unquote(parts.password or "")
+    auth = "Basic " + base64.b64encode(pair.encode()).decode()
+netloc = host + (":%d" % parts.port if parts.port else "")
+base = urlunsplit((parts.scheme, netloc, parts.path.rstrip("/") + "/", "", ""))
+opener = urllib.request.build_opener(urllib.request.HTTPSHandler(context=ctx))
+
+def get(url, headers):
+    req = urllib.request.Request(url, headers=dict(headers, **{"User-Agent": "authrecon-install-check"}))
+    if auth and urlsplit(url).hostname == host:
+        req.add_header("Authorization", auth)
+    return opener.open(req, timeout=20)
+
+def fail(err, where):
+    reason = getattr(err, "reason", err)
+    if isinstance(err, ssl.SSLCertVerificationError) or isinstance(reason, ssl.SSLCertVerificationError):
+        done("CERT", where + ": " + str(getattr(reason, "verify_message", "") or reason))
+    if isinstance(err, urllib.error.HTTPError):
+        if err.code == 401:
+            done("AUTH", where + ": HTTP 401")
+        if err.code in (403, 407, 451):
+            done("BLOCKED", where + ": HTTP %d" % err.code)
+        done("HTTP", where + ": HTTP %d" % err.code)
+    done("UNREACHABLE", where + ": " + str(reason))
+
+class Links(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.hrefs = []
+    def handle_starttag(self, tag, attrs):
+        if tag == "a":
+            self.hrefs += [v for k, v in attrs if k == "href" and v]
+
+try:
+    with get(base + "pip/", {"Accept": "text/html"}) as resp:
+        page = resp.read(2000000).decode("utf-8", "replace")
+except Exception as err:
+    fail(err, "package index " + host)
+links = Links()
+links.feed(page)
+if not links.hrefs:
+    done("BLOCKED", "package index " + host + ": answered without package links (a proxy block page?)")
+
+file_url = urljoin(base + "pip/", links.hrefs[-1]).split("#")[0]
+file_host = urlsplit(file_url).hostname or ""
+try:
+    with get(file_url, {"Range": "bytes=0-1023"}) as resp:
+        ctype = resp.headers.get("Content-Type", "")
+        resp.read(1024)
+except Exception as err:
+    fail(err, "package download " + file_host)
+if ctype.startswith("text/html"):
+    done("BLOCKED", "package download " + file_host + ": got a web page instead of a package (a proxy block page?)")
+done("OK", host)
+PYCHECK
+)" || true
+    report_network_check "Python packages" "${result}" || exit 1
+
+    # npm (frontend build). The npm CLI reports TLS and HTTP failures by code.
+    result="$(docker run --rm -v "${CERTS_DIR}:/certs:ro" \
+        "${npmrc_mount[@]+"${npmrc_mount[@]}"}" node:20-alpine sh -c '
+        cat /certs/*.crt /certs/*.pem > /tmp/extra-ca.pem 2>/dev/null
+        [ -s /tmp/extra-ca.pem ] && export NODE_EXTRA_CA_CERTS=/tmp/extra-ca.pem
+        cfg=""; [ -f /npmrc ] && cfg="--userconfig /npmrc"
+        if out="$(npm view $cfg --fetch-retries=0 --fetch-timeout=20000 react version 2>&1)"; then
+            echo "OK"
+        else
+            case "$out" in
+                *SELF_SIGNED*|*UNABLE_TO_GET_ISSUER*|*UNABLE_TO_VERIFY*|*CERT_*) echo "CERT npm registry: certificate verify failed" ;;
+                *E401*) echo "AUTH npm registry: HTTP 401" ;;
+                *E403*|*E407*) echo "BLOCKED npm registry: HTTP 403" ;;
+                *) echo "UNREACHABLE npm registry: $(printf "%s" "$out" | grep -m1 "npm error" | cut -c1-200)" ;;
+            esac
+        fi' 2>&1)" || true
+    report_network_check "npm packages" "${result}" || exit 1
+}
+
+# Print the result of one check and, on failure, what to do about it.
+report_network_check() {
+    local what="$1" result="$2"
+    # The verdict is the last line; anything before it is image pull output.
+    local last kind detail
+    last="$(printf '%s\n' "${result}" | tail -1)"
+    kind="${last%% *}"
+    detail="${last#* }"
+    case "${kind}" in
+        OK)
+            log_success "${what}: download works"
+            return 0 ;;
+        CERT)
+            log_error "${what}: TLS certificate not trusted (${detail})"
+            log_info "Your network probably inspects TLS with its own root certificate. Export that"
+            log_info "certificate and re-run: ./install.sh --ca-file /path/to/root-ca.pem"
+            log_info "How to export it: ADMIN_GUIDE.md, \"Corporate networks\"." ;;
+        BADCERT)
+            log_error "${what}: ${detail} is not a readable PEM certificate. Replace or remove it." ;;
+        BLOCKED)
+            log_error "${what}: download blocked (${detail})"
+            log_info "Your network blocks the public registry. Point the build at your private mirror:"
+            log_info "  ./install.sh --pip-index            (prompts for the PyPI index URL)"
+            log_info "  ./install.sh --npmrc /path/to/.npmrc"
+            log_info "See ADMIN_GUIDE.md, \"Corporate networks\"." ;;
+        AUTH)
+            log_error "${what}: the mirror rejected the credentials (${detail})"
+            log_info "Check the username/token in .build-secrets/ (encode '@' in a username as %40)." ;;
+        *)
+            log_error "${what}: download failed (${last})"
+            log_info "Check the network or proxy, or skip this check with --skip-network-check." ;;
+    esac
+    return 1
+}
+
+# =============================================================================
 # SECRETS GENERATION
 # =============================================================================
 
 generate_secrets() {
-    log_info "[1/7] Generating secrets..."
+    log_info "[1/8] Generating secrets..."
 
     # Generate Fernet key for portal credential encryption.
     # Uses only the Python standard library — no host-side cryptography package needed.
@@ -302,7 +592,7 @@ EOF
 # =============================================================================
 
 create_env_files() {
-    log_info "[2/7] Creating configuration files..."
+    log_info "[2/8] Creating configuration files..."
 
     # Frontend .env
     # Extract base URL and construct proper API endpoints
@@ -335,6 +625,15 @@ REDIS_PASSWORD=${REDIS_PASSWORD}
 PORTAL_API_SECRET=${PORTAL_API_SECRET}
 LOGINLAB_SERVICE_TOKEN=${LOGINLAB_SERVICE_TOKEN}
 EOF
+    if [[ ${USE_MIRROR} -eq 1 ]]; then
+        cat >> "${SCRIPT_DIR}/.env" <<'EOF'
+
+# Build from the private package mirror in .build-secrets/ (ADMIN_GUIDE.md)
+COMPOSE_FILE=docker-compose.yml:docker-compose.mirror.yml
+EOF
+        # Compose reads COMPOSE_FILE from .env; exporting it as well makes this run not depend on that.
+        export COMPOSE_FILE=docker-compose.yml:docker-compose.mirror.yml
+    fi
     chmod 600 "${SCRIPT_DIR}/.env"
     own_generated_file "${SCRIPT_DIR}/.env"
     log_success ".env created (compose settings)"
@@ -388,11 +687,53 @@ EOF
 }
 
 # =============================================================================
+# BUILD
+# =============================================================================
+
+# Build every image and pull the database images before anything starts, so a
+# network or build failure happens before any data exists (see rollback_new_install).
+build_images() {
+    log_info "[3/8] Building images (the first build takes several minutes)..."
+    docker compose build
+    docker compose pull postgres authrecon-redis
+    log_success "Images built"
+}
+
+# A first install that fails before the database is ready leaves only what
+# this run created: the four generated env files and, possibly, a new empty
+# database volume. Remove them so ./install.sh can simply be run again;
+# otherwise the existing-install guard would refuse. Never runs over an
+# install that existed before this run.
+rollback_new_install() {
+    [[ ${INSTALL_PREEXISTED} -eq 0 ]] || return 0
+    log_warning "Installation failed before the database was ready. Undoing this run's changes..."
+    docker compose down --remove-orphans >/dev/null 2>&1 || true
+    local volume
+    volume="$(compose_project)_authrecon_db"
+    if docker volume ls --format '{{.Name}}' 2>/dev/null | grep -qx "${volume}"; then
+        docker volume rm "${volume}" >/dev/null 2>&1 || true
+    fi
+    rm -f "${SCRIPT_DIR}/.env" "${SCRIPT_DIR}/.env.secrets" \
+        "${BACKEND_DIR}/security-portal/.env" "${BACKEND_DIR}/authrecon/backend/.env"
+    log_info "Removed the generated .env files. certs/ and .build-secrets/ are kept."
+    log_info "Fix the error above, then run ./install.sh again."
+}
+
+on_exit() {
+    local status=$?
+    if [[ ${status} -ne 0 && ${ROLLBACK_ARMED} -eq 1 ]]; then
+        ROLLBACK_ARMED=0
+        rollback_new_install
+    fi
+    exit "${status}"
+}
+
+# =============================================================================
 # DATABASE INITIALIZATION
 # =============================================================================
 
 start_database() {
-    log_info "[3/7] Starting PostgreSQL..."
+    log_info "[4/8] Starting PostgreSQL..."
 
     # Start only Postgres first
     docker compose up -d postgres
@@ -421,7 +762,7 @@ start_database() {
 # =============================================================================
 
 run_migrations() {
-    log_info "[4/7] Running database migrations..."
+    log_info "[5/8] Running database migrations..."
 
     # Start Redis and the worker (worker runs alembic on startup)
     docker compose up -d authrecon-redis authrecon-worker
@@ -448,7 +789,7 @@ run_migrations() {
 # =============================================================================
 
 start_services() {
-    log_info "[5/7] Starting all services..."
+    log_info "[6/8] Starting all services..."
 
     docker compose up -d
 
@@ -470,7 +811,7 @@ wait_for_url() {
 }
 
 run_health_checks() {
-    log_info "[6/7] Running health checks (waiting up to 90s for services to start)..."
+    log_info "[7/8] Running health checks (waiting up to 90s for services to start)..."
 
     local errors=0
 
@@ -516,7 +857,7 @@ run_health_checks() {
 # =============================================================================
 
 print_final_info() {
-    log_success "[7/7] Deployment complete!"
+    log_success "[8/8] Deployment complete!"
 
     print_success_banner
 
@@ -561,6 +902,7 @@ print_final_info() {
 # =============================================================================
 
 main() {
+    parse_args "$@"
     # docker compose resolves docker-compose.yml from the current directory.
     cd "${SCRIPT_DIR}"
     print_header
@@ -568,14 +910,20 @@ main() {
     check_root
     check_prerequisites
     check_existing_install
+    configure_build_network
+    check_build_network
 
     # Interactive mode (default)
     gather_inputs
 
-    # Installation steps
+    # Installation steps. Until the database is up, a failure undoes this run.
+    trap on_exit EXIT
+    ROLLBACK_ARMED=1
     generate_secrets
     create_env_files
+    build_images
     start_database
+    ROLLBACK_ARMED=0
     run_migrations
     start_services
     run_health_checks

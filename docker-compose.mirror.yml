@@ -1,0 +1,37 @@
+# Opt-in: build from a private package mirror (Artifactory, Nexus, ...) when
+# the public PyPI and npm registries are blocked. See ADMIN_GUIDE.md
+# ("Corporate networks"). install.sh enables this file by adding
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.mirror.yml
+# to .env, so plain `docker compose ...` commands keep using it.
+#
+# The mirror settings are BuildKit secrets read from .build-secrets/ (git- and
+# docker-ignored). They are mounted only while dependencies install, so they
+# never end up in an image layer or in `docker history`. Both files must
+# exist; leave one empty if you only need the other.
+#   .build-secrets/pip_index_url   one line: https://USER:TOKEN@mirror.example.com/.../simple
+#   .build-secrets/npmrc           an .npmrc with registry= and its auth line
+services:
+  frontend:
+    build:
+      secrets: [npmrc]
+  portal:
+    build:
+      secrets: [pip_index_url]
+  authrecon-api:
+    build:
+      secrets: [pip_index_url]
+  authrecon-worker:
+    build:
+      secrets: [pip_index_url]
+  authrecon-mcp:
+    build:
+      secrets: [pip_index_url]
+  loginlab:
+    build:
+      secrets: [pip_index_url]
+
+secrets:
+  pip_index_url:
+    file: ./.build-secrets/pip_index_url
+  npmrc:
+    file: ./.build-secrets/npmrc

@@ -7,7 +7,7 @@ from pydantic import AnyUrl, BaseSettings, Field, validator
 
 
 # Release version; must match the repo-root VERSION file (backend/authrecon/backend/tests/test_version.py).
-APP_VERSION = "0.9.0"
+APP_VERSION = "0.9.1"
 
 
 class Settings(BaseSettings):

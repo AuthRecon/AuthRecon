@@ -2,12 +2,32 @@
 # an unprivileged nginx. The image holds only dist/ — no source, .git or .env.
 # For hot-reload development use docker-compose.dev.yml (Vite dev server).
 
+# Extra CA certificates for networks that inspect TLS (see certs/README.md).
+# docker-compose.yml passes the repo's certs/ directory as the `certs` build
+# context; this empty stage is the default for a plain `docker build`.
+FROM scratch AS certs
+
 FROM node:20-alpine AS build
+
+# Trust any certificates in certs/ (none by default, then nothing changes).
+# Alpine has no update-ca-certificates without apk, so append them to the
+# bundle Node reads. This stage is discarded; the nginx image gets none of it.
+RUN --mount=type=bind,from=certs,target=/tmp/extra-certs \
+    set -e; \
+    for f in /tmp/extra-certs/*.crt /tmp/extra-certs/*.pem; do \
+        [ -f "$f" ] || continue; \
+        grep -q "BEGIN CERTIFICATE" "$f" || { echo "certs/$(basename "$f") is not a PEM certificate (see certs/README.md)" >&2; exit 1; }; \
+        { echo; tr -d '\r' < "$f"; } >> /etc/ssl/certs/ca-certificates.crt; \
+    done
+ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --no-audit --no-fund
+# Optional private npm registry (docker-compose.mirror.yml). The .npmrc is a
+# BuildKit secret, so its token never reaches an image layer.
+RUN --mount=type=secret,id=npmrc,target=/root/.npmrc \
+    npm ci --no-audit --no-fund
 
 COPY index.html vite.config.js tailwind.config.js postcss.config.js VERSION ./
 COPY public ./public
