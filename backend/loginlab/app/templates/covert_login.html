@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en" data-scenario="covert-auth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Access Portal - LoginLab</title>
+    <meta data-auth-type="js_widget_auth" data-scenario="covert-auth">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: system-ui, sans-serif;
+            background: linear-gradient(135deg, #2c3e50 0%, #1a1a2e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .login-card h1 { color: #333; margin-bottom: 10px; font-size: 1.8em; }
+        .login-card .subtitle { color: #666; margin-bottom: 30px; }
+
+        .field-group { margin-bottom: 20px; }
+
+        .field-group label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        /* No input[type="password"] anywhere on this page — this class
+           visually masks a plain text input instead. */
+        .widget-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 1em;
+        }
+
+        .masked {
+            -webkit-text-security: disc;
+            text-security: disc;
+        }
+
+        .widget-input:focus { outline: none; border-color: #2c3e50; }
+
+        .btn-widget {
+            width: 100%;
+            padding: 14px;
+            background: #2c3e50;
+            color: white;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: 600;
+            text-align: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .btn-widget:hover { background: #1a2634; }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border-left: 4px solid #c62828;
+            display: none;
+        }
+
+        .hint {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+            font-size: 0.9em;
+            border-left: 4px solid #2196f3;
+        }
+
+        .hint strong { display: block; margin-bottom: 8px; color: #1976d2; }
+        code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px; font-family: monospace; }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #2c3e50;
+            text-decoration: none;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <h1>Access Portal</h1>
+        <p class="subtitle">Enter your access details to continue</p>
+
+        <div class="error" id="error-msg"></div>
+
+        <!-- Deliberately not a <form> element. Fields are submitted via
+             a JS fetch() call in the script below, not a form POST. -->
+        <div class="login-widget">
+            <div class="field-group">
+                <label for="field_a">Access ID</label>
+                <input type="text" id="field_a" class="widget-input" autocomplete="off" />
+            </div>
+
+            <div class="field-group">
+                <label for="field_b">Passphrase</label>
+                <input type="text" id="field_b" class="widget-input masked" autocomplete="off" />
+            </div>
+
+            <div class="btn-widget" id="submit_widget" onclick="submitCovertLogin()">Continue</div>
+        </div>
+
+        <div class="hint">
+            <strong>Test Credentials:</strong>
+            Access ID: <code>testuser@loginlab.local</code><br>
+            Passphrase: <code>TestPass123!</code>
+        </div>
+
+        <div class="hint" style="background: #fff3e0; border-color: #ef6c00; margin-top: 10px;">
+            <strong>Note:</strong>
+            This scenario has no &lt;form&gt; element and no
+            <code>input[type="password"]</code> — it's built to defeat
+            AuthRecon's rule-based field discovery on purpose. See
+            AI_ARCHITECTURE.md's ai_fallback / MCP-assisted retry path.
+        </div>
+
+        <a href="/" class="back-link">← Back to Scenarios</a>
+    </div>
+
+    <script>
+        console.log('[LoginLab] Covert auth page loaded', {
+            scenario: 'covert-auth',
+            auth_type: 'js_widget_auth',
+            timestamp: new Date().toISOString()
+        });
+
+        async function submitCovertLogin() {
+            const a = document.getElementById('field_a').value;
+            const b = document.getElementById('field_b').value;
+            const errorEl = document.getElementById('error-msg');
+            errorEl.style.display = 'none';
+
+            try {
+                const resp = await fetch('/covert-auth/submit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ field_a: a, field_b: b }),
+                });
+                const data = await resp.json();
+                if (resp.ok && data.redirect) {
+                    window.location = data.redirect;
+                } else {
+                    errorEl.textContent = data.error || 'Access denied.';
+                    errorEl.style.display = 'block';
+                }
+            } catch (e) {
+                errorEl.textContent = 'Request failed: ' + e;
+                errorEl.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>

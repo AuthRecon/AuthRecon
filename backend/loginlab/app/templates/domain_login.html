@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>LoginLab · Domain Select Login</title>
+  <style>
+    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; margin: 0; }
+    .wrap { max-width: 860px; margin: 0 auto; padding: 32px 20px 48px; }
+    .card { background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(148, 163, 184, 0.3); border-radius: 16px; padding: 20px 22px; box-shadow: 0 15px 35px rgba(0,0,0,0.35); }
+    h1 { margin: 0 0 6px; }
+    p { margin: 0 0 12px; color: #94a3b8; }
+    label { display: block; margin-bottom: 12px; font-size: 14px; color: #cbd5e1; }
+    input, select { width: 100%; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(148, 163, 184, 0.3); background: rgba(15, 23, 42, 0.7); color: #e2e8f0; }
+    button { padding: 10px 14px; border-radius: 12px; border: none; background: linear-gradient(120deg, #2563eb, #3b82f6); color: #fff; font-weight: 600; cursor: pointer; }
+    .helper { font-size: 13px; color: #94a3b8; }
+    .error { background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(248, 113, 113, 0.4); color: #fecdd3; padding: 10px 12px; border-radius: 12px; margin-bottom: 12px; }
+    .reveal { text-align: right; margin-bottom: 12px; }
+    .hidden { display: none; }
+    .checkbox-row { display: flex; align-items: center; gap: 8px; margin: 8px 0 12px; }
+  </style>
+  <script>
+    function revealForm() {
+      document.getElementById('hidden-form').classList.remove('hidden');
+      document.getElementById('reveal-btn').disabled = true;
+    }
+  </script>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Domain Select Login</h1>
+      <p class="helper">Form is hidden until you click “Reveal login”. Requires selecting a domain/tenant and accepting terms.</p>
+
+      {% if error %}
+      <div class="error">{{ error }}</div>
+      {% endif %}
+
+      <div class="reveal">
+        <button type="button" id="reveal-btn" onclick="revealForm()">Reveal login</button>
+      </div>
+
+      <form id="hidden-form" class="hidden" method="POST" action="/form-login-domain">
+        <label>
+          Domain / Tenant
+          <select name="domain" required>
+            {% for d in domains %}
+            <option value="{{ d }}" {% if domain_selected == d %}selected{% endif %}>{{ d }}</option>
+            {% endfor %}
+          </select>
+        </label>
+
+        <label>
+          Username
+          <input type="text" name="username" placeholder="user or user@domain" value="{{ username or '' }}" required />
+        </label>
+
+        <label>
+          Password
+          <input type="password" name="password" placeholder="Password" required />
+        </label>
+
+        <div class="checkbox-row">
+          <input type="checkbox" id="consent" name="consent" value="yes" />
+          <label for="consent" style="margin: 0;">I accept the access terms</label>
+        </div>
+
+        <button type="submit">Sign in</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

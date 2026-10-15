@@ -1,0 +1,94 @@
+AuthRecon Suite - Third-Party Software Notices
+================================================
+
+AuthRecon's own code is licensed under the Apache License 2.0 (see LICENSE).
+It uses the third-party software listed below. Each component remains under
+its own license; the full license texts ship with each package (in the
+installed Python/npm packages, the container images, or the upstream
+repositories linked here).
+
+The Docker images are built on your machine by install.sh. Components marked
+[image] are downloaded at build time into those images and run there as
+separate programs; they are not part of AuthRecon's source.
+
+
+1. Browser automation and live view
+-----------------------------------
+Selenium (Python bindings)   Apache-2.0    https://github.com/SeleniumHQ/selenium
+Playwright for Python        Apache-2.0    https://github.com/microsoft/playwright-python
+Chromium / ChromeDriver      BSD-3-Clause and others (see chrome://credits)  [image]
+                                           https://www.chromium.org/
+noVNC 1.4.0                  MPL-2.0 (some bundled files under BSD/MIT/OFL;
+                             see LICENSE.txt in the noVNC archive)  [image]
+                                           https://github.com/novnc/noVNC
+websockify                   LGPL-3.0 (Python package used unmodified)
+                                           https://github.com/novnc/websockify
+x11vnc                       GPL-2.0  [image]  https://github.com/LibVNC/x11vnc
+Xvfb (X.Org)                 MIT/X11  [image]  https://www.x.org/
+
+
+2. Python backend
+-----------------
+FastAPI                      MIT           https://github.com/fastapi/fastapi
+Starlette                    BSD-3-Clause  https://github.com/encode/starlette
+Uvicorn                      BSD-3-Clause  https://github.com/encode/uvicorn
+Pydantic / pydantic-settings MIT           https://github.com/pydantic/pydantic
+SQLAlchemy                   MIT           https://github.com/sqlalchemy/sqlalchemy
+Alembic                      MIT           https://github.com/sqlalchemy/alembic
+psycopg2-binary              LGPL-3.0 with exceptions
+                                           https://github.com/psycopg/psycopg2
+redis-py / hiredis           MIT / BSD-3-Clause
+                                           https://github.com/redis/redis-py
+RQ                           BSD-2-Clause  https://github.com/rq/rq
+HTTPX                        BSD-3-Clause  https://github.com/encode/httpx
+Requests                     Apache-2.0    https://github.com/psf/requests
+cryptography                 Apache-2.0 OR BSD-3-Clause
+                                           https://github.com/pyca/cryptography
+bcrypt                       Apache-2.0    https://github.com/pyca/bcrypt
+passlib                      BSD-3-Clause  https://foss.heptapod.net/python-libs/passlib
+python-jose                  MIT           https://github.com/mpdavis/python-jose
+PyJWT                        MIT           https://github.com/jpadilla/pyjwt
+itsdangerous / Jinja2        BSD-3-Clause  https://github.com/pallets
+SlowAPI                      MIT           https://github.com/laurentS/slowapi
+websockets                   BSD-3-Clause  https://github.com/python-websockets/websockets
+wsproto                      MIT           https://github.com/python-hyper/wsproto
+python-multipart             Apache-2.0    https://github.com/Kludex/python-multipart
+python-dotenv                BSD-3-Clause  https://github.com/theskumar/python-dotenv
+email-validator              Unlicense     https://github.com/JoshData/python-email-validator
+PyYAML                       MIT           https://github.com/yaml/pyyaml
+Beautiful Soup 4             MIT           https://www.crummy.com/software/BeautifulSoup/
+lxml                         BSD-3-Clause  https://github.com/lxml/lxml
+MCP Python SDK               MIT           https://github.com/modelcontextprotocol/python-sdk
+Click                        BSD-3-Clause  https://github.com/pallets/click        (CLI)
+Rich                         MIT           https://github.com/Textualize/rich     (CLI)
+pytest                       MIT           https://github.com/pytest-dev/pytest   (tests only)
+
+
+3. Frontend (bundled into the web UI)
+-------------------------------------
+React / React DOM            MIT           https://github.com/facebook/react
+React Router                 MIT           https://github.com/remix-run/react-router
+TanStack Query               MIT           https://github.com/TanStack/query
+Zustand                      MIT           https://github.com/pmndrs/zustand
+Axios                        MIT           https://github.com/axios/axios
+D3                           ISC           https://github.com/d3/d3
+Framer Motion                MIT           https://github.com/motiondivision/motion
+Headless UI                  MIT           https://github.com/tailwindlabs/headlessui
+Lucide (lucide-react)        ISC           https://github.com/lucide-icons/lucide
+nanoid                       MIT           https://github.com/ai/nanoid
+Build tools (not shipped): Vite (MIT), Tailwind CSS (MIT), PostCSS (MIT),
+Autoprefixer (MIT), @vitejs/plugin-react (MIT).
+
+
+4. Base images and services  [image]
+------------------------------------
+Python (python:3.x-slim)     PSF License (Debian base: various free licenses)
+Node.js (build stage only)   MIT
+nginx (nginx-unprivileged)   BSD-2-Clause
+PostgreSQL 15                PostgreSQL License
+Redis 7                      Redis 7.2 and earlier: BSD-3-Clause; 7.4 and later:
+                             RSALv2 / SSPLv1 dual license. The compose file
+                             pulls the official redis:7-alpine image unmodified.
+
+
+Licence text for any component above is available from its project page.

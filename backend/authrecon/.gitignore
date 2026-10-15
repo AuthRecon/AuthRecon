@@ -1,0 +1,10 @@
+# Node/Vite artifacts
+frontend/node_modules
+frontend/dist
+frontend/.vite
+frontend/package-lock.json
+frontend/pnpm-lock.yaml
+frontend/yarn.lock
+
+# Python cache
+__pycache__/

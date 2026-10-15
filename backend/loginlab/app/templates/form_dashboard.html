@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Dashboard - LoginLab</title>
+    <style>
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 32px;
+        background: #0f172a;
+        color: #e2e8f0;
+      }
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+      }
+      h1 {
+        margin: 0 0 8px;
+      }
+      .row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 16px;
+        margin-top: 24px;
+      }
+      .card {
+        background: #111827;
+        border: 1px solid #1f2937;
+        border-radius: 12px;
+        padding: 18px;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.6);
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: #22c55e;
+        color: #0f172a;
+        font-weight: 600;
+        font-size: 0.85rem;
+      }
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      input[type="text"],
+      input[type="email"),
+      button {
+        border-radius: 8px;
+        border: 1px solid #334155;
+        background: #0f172a;
+        color: inherit;
+        padding: 10px 12px;
+        font-size: 1rem;
+      }
+      button {
+        border: none;
+        background: #38bdf8;
+        color: #0f172a;
+        cursor: pointer;
+        font-weight: 700;
+      }
+      footer {
+        margin-top: 32px;
+        font-size: 0.9rem;
+        color: #94a3b8;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div>
+        <h1>✅ Authenticated - Form Login</h1>
+        <p>Welcome, <strong>{{ user.display_name }}</strong> ({{ user.role }})</p>
+        <div class="badge">Session Active</div>
+      </div>
+      <div>
+        <p>
+          <a href="/form-login/logout">Logout</a> |
+          <a href="/">Back to Scenarios</a>
+        </p>
+      </div>
+    </header>
+
+    <div class="row">
+      <div class="card">
+        <h3>Quick Actions</h3>
+        <p>Use these hooks to exercise additional behavior.</p>
+        <ul>
+          <li><a href="/protected">View Protected Area</a></li>
+          <li><a href="/protected/action">Submit Protected Form</a></li>
+          <li><a href="/protected/vuln-sql">SQL Error Echo (scanner target)</a></li>
+          <li><a href="/protected/vuln-xss">Reflected XSS (scanner target)</a></li>
+          <li><a href="/api/protected">View Protected JSON</a></li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Session Insight</h3>
+        <p>Cookies minted for this session:</p>
+        <pre style="font-size:0.8rem">{{ cookies|default("Awaiting capture") }}</pre>
+      </div>
+      <div class="card">
+        <h3>Telemetry</h3>
+        <p>Latest run: {{ user.role }} login ({{ user.username }})</p>
+        <p><small>Use the scanner to validate protected endpoints.</small></p>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="card">
+        <h3>Protected Form (for scanners)</h3>
+        <form method="post" action="/protected/action">
+          <label for="scanner_input">Payload</label>
+          <input
+            type="text"
+            name="scanner_input"
+            id="scanner_input"
+            value="auth_recon_payload"
+          />
+          <button type="submit">Submit to protected action</button>
+        </form>
+      </div>
+      <div class="card">
+        <h3>Exploit Playbook</h3>
+        <p>Helpful links:</p>
+        <ul>
+          <li>/form-login</li>
+          <li>/multi-step</li>
+          <li>/ldap-login</li>
+          <li>/sso-redirect</li>
+        </ul>
+      </div>
+    </div>
+
+    <footer>
+      LoginLab · Safe testing ground · Source session data for scanners.
+    </footer>
+  </body>
+</html>

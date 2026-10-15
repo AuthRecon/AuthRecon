@@ -1,0 +1,168 @@
+services:
+  # React frontend: production static build served by unprivileged nginx.
+  # Browser-facing API URLs are build args (from .env); the container gets no
+  # secrets. For hot-reload development:
+  #   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d frontend
+  frontend:
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:9000}
+        VITE_PORTAL_API: ${VITE_PORTAL_API:-http://localhost:9000}
+        VITE_AUTHRECON_API: ${VITE_AUTHRECON_API:-http://localhost:9000/apps/authrecon/api/v1}
+        VITE_WS_URL: ${VITE_WS_URL:-ws://localhost:9000/ws}
+    ports:
+      - "5173:5173"
+    depends_on:
+      - portal
+
+  portal:
+    restart: unless-stopped
+    build:
+      context: ./backend/security-portal
+    env_file:
+      - ./backend/security-portal/.env
+    environment:
+      PORTAL_DATABASE_URL: ${PORTAL_DATABASE_URL:-postgresql+psycopg2://portal:${PORTAL_DB_PASSWORD:?Set PORTAL_DB_PASSWORD in .env before starting}@postgres:5432/portal}
+      LOGINLAB_URL: http://loginlab:5500
+      LOGINLAB_SERVICE_TOKEN: ${LOGINLAB_SERVICE_TOKEN:?Set LOGINLAB_SERVICE_TOKEN in .env before starting (install.sh generates it)}
+      REDIS_URL: redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env before starting}@authrecon-redis:6379/1
+    ports:
+      - "9000:9000"
+    volumes:
+      - ./backend/security-portal/tools.yaml:/app/tools.yaml:ro
+      - portal-data:/app/data  # Persist encryption keys across rebuilds
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      authrecon-api:
+        condition: service_started
+
+  authrecon-api:
+    restart: unless-stopped
+    build:
+      context: ./backend/authrecon/backend
+    ports:
+      - "8001:8000"
+    env_file:
+      - ./backend/authrecon/backend/.env
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env before starting}
+      DATABASE_URL: postgresql+psycopg2://authrecon:${AUTHRECON_DB_PASSWORD:?Set AUTHRECON_DB_PASSWORD in .env before starting}@postgres:5432/authrecon
+      REDIS_URL: redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env before starting}@authrecon-redis:6379/0
+      PORTAL_API_SECRET: ${PORTAL_API_SECRET:?Set PORTAL_API_SECRET in .env before starting}
+      PORTAL_SERVICE_ID: auth_recon
+    volumes:
+      - ./backend/authrecon/backend/app:/app/app
+      - authrecon_artifacts:/app/data/artifacts
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      authrecon-redis:
+        condition: service_started
+      authrecon-worker:
+        condition: service_started
+
+  authrecon-worker:
+    build:
+      context: ./backend/authrecon/backend
+    restart: unless-stopped
+    shm_size: '256m'
+    env_file:
+      - ./backend/authrecon/backend/.env
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env before starting}
+      DATABASE_URL: postgresql+psycopg2://authrecon:${AUTHRECON_DB_PASSWORD:?Set AUTHRECON_DB_PASSWORD in .env before starting}@postgres:5432/authrecon
+      REDIS_URL: redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env before starting}@authrecon-redis:6379/0
+      PORTAL_API_SECRET: ${PORTAL_API_SECRET:?Set PORTAL_API_SECRET in .env before starting}
+      ENABLE_PLAYWRIGHT_HAR: ${ENABLE_PLAYWRIGHT_HAR:-true}
+    # No VNC ports are published. Live views are per-run (app/services/vnc_session.py):
+    # each gets its own display and a websockify port on the internal network that
+    # only the portal's authenticated proxy (/apps/authrecon/vnc/{run_id}) uses.
+    volumes:
+      - ./backend/authrecon/backend/app:/app/app
+      - authrecon_artifacts:/app/data/artifacts
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      authrecon-redis:
+        condition: service_started
+    command: python -m app.worker
+
+  postgres:
+    restart: unless-stopped
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_SUPERUSER_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:?Set POSTGRES_SUPERUSER_PASSWORD in .env before starting}
+      PORTAL_DB_USER: ${PORTAL_DB_USER:-portal}
+      PORTAL_DB_PASSWORD: ${PORTAL_DB_PASSWORD:?Set PORTAL_DB_PASSWORD in .env before starting}
+      AUTHRECON_DB_USER: ${AUTHRECON_DB_USER:-authrecon}
+      AUTHRECON_DB_PASSWORD: ${AUTHRECON_DB_PASSWORD:?Set AUTHRECON_DB_PASSWORD in .env before starting}
+    volumes:
+      - authrecon_db:/var/lib/postgresql/data
+      - ./backend/scripts/postgres/init-multi-db.sh:/docker-entrypoint-initdb.d/init-multi-db.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  authrecon-redis:
+    restart: unless-stopped
+    image: redis:7-alpine
+    command: sh -c 'redis-server --save "" --appendonly no --requirepass ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env before starting}'
+
+  # AuthRecon MCP server - exposes a narrow tool set to MCP-compatible
+  # clients (Claude Desktop, Claude Code, etc). Always running, but it holds no
+  # credentials and publishes no port: clients connect through the portal at
+  # /apps/authrecon/mcp with their own AuthRecon API key, and an admin turns
+  # MCP on/off in Settings > AI & MCP (off by default).
+  authrecon-mcp:
+    restart: unless-stopped
+    build:
+      context: ./backend/authrecon-mcp
+    environment:
+      AUTHRECON_API_URL: http://authrecon-api:8000/api/v1
+    depends_on:
+      - authrecon-api
+
+  # LoginLab - Training environment (internal only, no external port binding)
+  # WARNING: Contains intentional vulnerabilities for testing - never expose externally
+  loginlab:
+    build:
+      context: ./backend/loginlab
+    environment:
+      PORT: 5500
+      LOGINLAB_SERVICE_TOKEN: ${LOGINLAB_SERVICE_TOKEN:?Set LOGINLAB_SERVICE_TOKEN in .env before starting (install.sh generates it)}
+      ALLOWED_HOSTS: "authrecon-worker,authrecon-api,portal"
+    expose:
+      - "5500"
+    ports:
+      # Loopback-only (127.0.0.1, not 0.0.0.0) and gated behind the
+      # `loginlab` profile below — this only binds when someone explicitly
+      # starts the training environment, which is already off by default.
+      # A deployment that never enables this profile never binds the port.
+      - "127.0.0.1:5500:5500"
+    restart: "no"  # Don't auto-restart - controlled by admin toggle
+    profiles:
+      - loginlab  # Only starts when explicitly enabled
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5500/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  authrecon_db:
+  authrecon_artifacts:
+  portal-data:  # Persistent storage for portal encryption keys

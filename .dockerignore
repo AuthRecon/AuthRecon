@@ -1,0 +1,19 @@
+# Build context for Dockerfile.frontend (context: repo root). Keep secrets,
+# history and backend code out of the image.
+.git
+.github
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+audit/
+logs/
+backend/
+node_modules/
+dist/
+docs/
+scripts/
+*.md
+*.log
+**/__pycache__

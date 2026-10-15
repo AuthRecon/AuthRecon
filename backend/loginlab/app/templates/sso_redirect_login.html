@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>LoginLab Identity Provider · Sign In</title>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; margin: 0; }
+    .wrap { max-width: 520px; margin: 0 auto; padding: 48px 20px; }
+    .card { background: rgba(30, 41, 59, 0.85); border: 1px solid rgba(148, 163, 184, 0.3); border-radius: 16px; padding: 24px; }
+    h1 { margin: 0 0 6px; font-size: 24px; }
+    p { margin: 0 0 14px; color: #94a3b8; }
+    label { display: block; margin-bottom: 14px; font-size: 14px; color: #cbd5e1; }
+    input { box-sizing: border-box; width: 100%; margin-top: 6px; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(148, 163, 184, 0.3); background: rgba(15, 23, 42, 0.7); color: #e2e8f0; }
+    button { width: 100%; padding: 11px 14px; border-radius: 10px; border: none; background: #2563eb; color: #fff; font-weight: 600; cursor: pointer; }
+    .error { background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(248, 113, 113, 0.4); color: #fecdd3; padding: 10px 12px; border-radius: 10px; margin-bottom: 14px; }
+    .meta { font-size: 13px; color: #94a3b8; }
+    a { color: #93c5fd; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>LoginLab Identity Provider</h1>
+      <p>An application sent you here to sign in. After signing in you are redirected back to it.</p>
+      {% if error %}<div class="error">{{ error }}</div>{% endif %}
+      <form method="post" action="/sso-redirect/authorize">
+        <input type="hidden" name="state" value="{{ state }}" />
+        <label>Email
+          <input type="email" id="username" name="username" autocomplete="username" required />
+        </label>
+        <label>Password
+          <input type="password" id="password" name="password" autocomplete="current-password" required />
+        </label>
+        <button type="submit" id="login-button">Sign in</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

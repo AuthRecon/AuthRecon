@@ -1,0 +1,10 @@
+- id: auth_recon
+  name: Auth Recon
+  description: Authentication reconnaissance and reporting suite.
+  url: /apps/authrecon
+  status_url: http://authrecon-api:8000/health/ready
+  tags: [auth, reporting]
+  enabled: true
+  service_id: auth_recon
+  sso_enabled: true
+  sso_entry_url: /apps/authrecon

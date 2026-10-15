@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Protected Area - LoginLab</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+</head>
+<body>
+  <main class="container">
+    <h1>Protected Area</h1>
+    <p>Welcome, <strong>{{ user.display_name }}</strong> ({{ user.role }})</p>
+
+    <section>
+      <h3>Session Details</h3>
+      <pre>{{ user }}</pre>
+    </section>
+
+    <section>
+      <h3>Received Cookies</h3>
+      <pre>{{ cookies }}</pre>
+    </section>
+
+    <section>
+      <h3>Protected Form</h3>
+      <form method="post" action="/protected/action">
+        <label for="input">Test Input</label>
+        <input type="text" id="input" name="input" value="scanner_payload" />
+        <button type="submit">Submit</button>
+      </form>
+    </section>
+
+    <section>
+      <h3>Vulnerability Playground (for scanners)</h3>
+      <ul>
+        <li><a href="/protected/vuln-sql">SQL error echo</a></li>
+        <li><a href="/protected/vuln-xss">Reflected XSS echo</a></li>
+      </ul>
+    </section>
+
+    <p><a href="/form-login/logout">Logout</a></p>
+  </main>
+</body>
+</html>

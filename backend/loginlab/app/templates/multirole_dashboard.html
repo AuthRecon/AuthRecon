@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>MultiRole Lab · Dashboard</title>
+  <style>
+    body { margin: 0; font-family: "Inter", system-ui, sans-serif; background: #0b1022; color: #e2e8f0; }
+    header { padding: 28px 24px 12px; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 0 24px 48px; }
+    .pill { display: inline-block; padding: 6px 12px; border-radius: 999px; background: rgba(59, 130, 246, 0.15); color: #bfdbfe; font-size: 13px; }
+    .card { background: rgba(30, 41, 59, 0.85); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 18px; padding: 18px 20px; margin-bottom: 18px; }
+    .actions { display: flex; gap: 12px; flex-wrap: wrap; }
+    a.button { text-decoration: none; background: linear-gradient(120deg, #2563eb, #3b82f6); color: #fff; padding: 10px 14px; border-radius: 12px; font-weight: 600; }
+    .helper { color: #94a3b8; font-size: 13px; }
+    ul { padding-left: 18px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="pill">MultiRole Lab</div>
+      <h1>Welcome, {{ user.display }}</h1>
+      <p class="helper">Role: {{ user.role }} · Tenant: {{ user.tenant }} · Email: {{ user.email }}</p>
+    </header>
+
+    <section class="card">
+      <h3>Actions</h3>
+      <div class="actions">
+        <a class="button" href="/lab/multirole/search">Open vulnerable search endpoint</a>
+        <a class="button" href="/lab/multirole/logout" style="background: linear-gradient(120deg, #dc2626, #ef4444);">Sign out</a>
+      </div>
+      <p class="helper">Use the search endpoint to validate scanner findings (reflected inputs + SQL error simulation).</p>
+    </section>
+
+    <section class="card">
+      <h3>Announcements for your persona</h3>
+      <ul>
+        {% for note in user.announcements %}
+        <li>{{ note }}</li>
+        {% endfor %}
+      </ul>
+    </section>
+  </div>
+</body>
+</html>

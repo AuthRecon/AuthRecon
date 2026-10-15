@@ -1,0 +1,29 @@
+# Development override: run the Vite dev server with hot reload instead of the
+# production nginx image. Never use this on a shared network — the dev server
+# serves project files to anyone who can reach port 5173.
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d frontend
+services:
+  frontend:
+    build: !reset null
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm ci --no-audit --no-fund && npm run dev -- --host 0.0.0.0 --port 5173"
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:9000}
+      VITE_PORTAL_API: ${VITE_PORTAL_API:-http://localhost:9000}
+      VITE_AUTHRECON_API: ${VITE_AUTHRECON_API:-http://localhost:9000/apps/authrecon/api/v1}
+      VITE_WS_URL: ${VITE_WS_URL:-ws://localhost:9000/ws}
+    volumes:
+      - ./package.json:/app/package.json:ro
+      - ./package-lock.json:/app/package-lock.json:ro
+      - ./src:/app/src
+      - ./public:/app/public
+      - ./index.html:/app/index.html
+      - ./vite.config.js:/app/vite.config.js
+      - ./VERSION:/app/VERSION:ro
+      - ./tailwind.config.js:/app/tailwind.config.js
+      - ./postcss.config.js:/app/postcss.config.js
+      - frontend-dev-node-modules:/app/node_modules
+
+volumes:
+  frontend-dev-node-modules:

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SQL Error Echo - LoginLab</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+</head>
+<body>
+  <main class="container">
+    <h1>SQL Error Echo</h1>
+    <p>Authenticated session: <strong>{{ user.display_name }}</strong> ({{ user.role }})</p>
+    <p>This endpoint intentionally emits SQL error-style messages when suspicious input is provided so scanners can validate detection. Use only in this lab.</p>
+
+    <form method="post" action="/protected/vuln-sql">
+      <label for="query">Query Input</label>
+      <input type="text" id="query" name="query" value="{{ last_input }}" />
+      <button type="submit">Submit</button>
+    </form>
+
+    {% if error_text %}
+    <article style="border:1px solid #ef4444; background:#1f2937; padding:12px; margin-top:16px;">
+      <h3>Database Response</h3>
+      <pre style="color:#fca5a5;">{{ error_text }}</pre>
+      <p style="color:#f8fafc;">Stacktrace: pg_query(): SQL syntax error at or near input.</p>
+    </article>
+    {% else %}
+    <p style="margin-top:16px;">No SQL errors triggered yet.</p>
+    {% endif %}
+
+    <p style="margin-top:12px;"><a href="/protected">Back to protected area</a></p>
+  </main>
+</body>
+</html>

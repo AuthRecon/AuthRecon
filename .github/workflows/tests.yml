@@ -1,0 +1,52 @@
+name: tests
+
+on:
+  push:
+    branches: [public-release, main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    name: ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Python versions match each service's Dockerfile base image.
+          - service: authrecon-api
+            dir: backend/authrecon/backend
+            python: "3.11"
+          - service: portal
+            dir: backend/security-portal
+            python: "3.12"
+          - service: authrecon-mcp
+            dir: backend/authrecon-mcp
+            python: "3.12"
+    defaults:
+      run:
+        working-directory: ${{ matrix.dir }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: ${{ matrix.dir }}/requirements.txt
+      - run: pip install -r requirements.txt pytest pytest-asyncio
+      # Unit tests only: SQLite and mocked transports, no browsers or services.
+      - run: python -m pytest -q tests
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build

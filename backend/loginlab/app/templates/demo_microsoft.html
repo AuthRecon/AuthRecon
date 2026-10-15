@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en" data-scenario="microsoft-sso">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign in to your account</title>
+    <meta data-auth-type="azure_ad" data-scenario="microsoft-sso">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #0078d4 0%, #106ebe 50%, #005a9e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 440px;
+            padding: 44px;
+        }
+
+        .microsoft-logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .microsoft-logo svg {
+            width: 108px;
+            height: 24px;
+        }
+
+        .login-container h1 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1b1b1b;
+            margin-bottom: 12px;
+        }
+
+        .login-container .subtitle {
+            color: #616161;
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            color: #323130;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #8a8886;
+            border-radius: 2px;
+            font-size: 14px;
+            transition: border-color 0.1s;
+            font-family: inherit;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #0078d4;
+            border-width: 2px;
+            padding: 9px 11px;
+        }
+
+        input::placeholder {
+            color: #a19f9d;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 10px 20px;
+            background: #0078d4;
+            color: white;
+            border: none;
+            border-radius: 2px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.1s;
+            font-family: inherit;
+        }
+
+        .btn-primary:hover {
+            background: #106ebe;
+        }
+
+        .btn-primary:active {
+            background: #005a9e;
+        }
+
+        .error {
+            background: #fde7e9;
+            color: #a80000;
+            padding: 12px;
+            border-radius: 2px;
+            margin-bottom: 16px;
+            font-size: 14px;
+            border-left: 4px solid #a80000;
+        }
+
+        .links {
+            margin-top: 24px;
+            font-size: 13px;
+        }
+
+        .links a {
+            color: #0067b8;
+            text-decoration: none;
+        }
+
+        .links a:hover {
+            text-decoration: underline;
+        }
+
+        .sign-in-options {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid #edebe9;
+        }
+
+        .sign-in-options p {
+            font-size: 13px;
+            color: #323130;
+            margin-bottom: 12px;
+        }
+
+        .option-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .btn-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            background: #f3f2f1;
+            border: 1px solid #8a8886;
+            border-radius: 2px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.1s;
+            font-family: inherit;
+            color: #323130;
+        }
+
+        .btn-option:hover {
+            background: #edebe9;
+        }
+
+        .btn-option svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .hint {
+            background: #deecf9;
+            padding: 16px;
+            border-radius: 4px;
+            margin-top: 24px;
+            font-size: 13px;
+            border-left: 4px solid #0078d4;
+        }
+
+        .hint strong {
+            display: block;
+            margin-bottom: 8px;
+            color: #0078d4;
+        }
+
+        code {
+            background: #f3f2f1;
+            padding: 2px 6px;
+            border-radius: 2px;
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #0067b8;
+            text-decoration: none;
+            font-size: 13px;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <!-- Microsoft Logo -->
+        <div class="microsoft-logo">
+            <svg viewBox="0 0 108 24" xmlns="http://www.w3.org/2000/svg">
+                <path fill="#f25022" d="M0 0h11v11H0z"/>
+                <path fill="#7fba00" d="M12 0h11v11H12z"/>
+                <path fill="#00a4ef" d="M0 12h11v11H0z"/>
+                <path fill="#ffb900" d="M12 12h11v11H12z"/>
+                <text x="28" y="17" fill="#5e5e5e" font-family="Segoe UI" font-size="15" font-weight="600">Microsoft</text>
+            </svg>
+        </div>
+
+        <h1>Sign in</h1>
+        <p class="subtitle">to continue to Contoso Portal</p>
+
+        {% if error %}
+        <div class="error">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST" action="/demo/microsoft" data-login-form="true" id="loginForm">
+            <div class="form-group">
+                <input
+                    type="email"
+                    id="email"
+                    name="username"
+                    placeholder="Email, phone, or Skype"
+                    data-field="username"
+                    required
+                    autocomplete="username"
+                >
+            </div>
+
+            <div class="links">
+                <a href="#">No account? Create one!</a><br>
+                <a href="#">Can't access your account?</a>
+            </div>
+
+            <div class="form-group" style="margin-top: 24px;">
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    placeholder="Password"
+                    data-field="password"
+                    required
+                    autocomplete="current-password"
+                >
+            </div>
+
+            <button type="submit" class="btn-primary" id="loginButton" data-action="login">
+                Sign in
+            </button>
+        </form>
+
+        <div class="sign-in-options">
+            <p>Sign-in options</p>
+            <div class="option-buttons">
+                <button type="button" class="btn-option">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                    Sign in with Windows Hello or a security key
+                </button>
+            </div>
+        </div>
+
+        <div class="hint">
+            <strong>Demo Credentials:</strong>
+            Email: <code>user@contoso.com</code><br>
+            Password: <code>AzureDemo123!</code>
+        </div>
+
+        <a href="/" class="back-link">← Back to Scenarios</a>
+    </div>
+
+    <script>
+        console.log('[LoginLab] Microsoft SSO demo page loaded', {
+            scenario: 'microsoft-sso',
+            auth_type: 'azure_ad',
+            timestamp: new Date().toISOString()
+        });
+    </script>
+</body>
+</html>

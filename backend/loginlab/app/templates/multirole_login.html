@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>MultiRole Lab · Login</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Inter", system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at 20% 20%, #111827, #0b1022 45%, #070a14 80%);
+      color: #e5e7eb;
+      min-height: 100vh;
+    }
+    header {
+      padding: 32px 24px 12px;
+      text-align: center;
+    }
+    h1 { margin: 6px 0; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+      padding: 24px;
+      max-width: 1100px;
+      margin: 0 auto 48px;
+    }
+    .card {
+      background: rgba(30, 41, 59, 0.75);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      border-radius: 18px;
+      padding: 18px 20px;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+    }
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 14px;
+      margin-bottom: 14px;
+      color: #cbd5e1;
+    }
+    input {
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      background: rgba(15, 23, 42, 0.7);
+      color: #e5e7eb;
+    }
+    .actions {
+      display: flex;
+      justify-content: flex-end;
+    }
+    button {
+      background: linear-gradient(120deg, #2563eb, #3b82f6);
+      border: none;
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      font-size: 14px;
+    }
+    th, td {
+      text-align: left;
+      padding: 8px 6px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+    }
+    .eyebrow { letter-spacing: 0.05em; text-transform: uppercase; font-size: 13px; color: #93c5fd; }
+    .flash {
+      background: rgba(239, 68, 68, 0.18);
+      color: #fecdd3;
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      padding: 10px 12px;
+      border-radius: 12px;
+      margin-bottom: 14px;
+    }
+    .helper { color: #94a3b8; font-size: 13px; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <header>
+    <p class="eyebrow">MultiRole Lab</p>
+    <h1>Authenticate to explore persona dashboards</h1>
+    <p class="helper">Use these demo personas to exercise multi-role login handling and scanner workflows.</p>
+  </header>
+
+  <section class="grid">
+    <article class="card">
+      <h2>Sign in</h2>
+      {% if error %}
+      <div class="flash">{{ error }}</div>
+      {% endif %}
+      <form method="post" action="/lab/multirole">
+        <label>
+          Email address
+          <input type="email" name="email" placeholder="you@lab.local" required />
+        </label>
+        <label>
+          Password
+          <input type="password" name="password" placeholder="••••••••" required />
+        </label>
+        <div class="actions">
+          <button type="submit">Authenticate</button>
+        </div>
+        <p class="helper">Cookie name: <code>multirole_session</code> · scope: <code>/lab/multirole</code></p>
+      </form>
+    </article>
+
+    <article class="card">
+      <h2>Available personas</h2>
+      <p class="helper">Pick any persona to simulate role changes and authorization-aware scans.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Password</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for email, data in accounts.items() %}
+          <tr>
+            <td>{{ email }}</td>
+            <td>{{ data.role }}</td>
+            <td><code>{{ data.password }}</code></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </article>
+  </section>
+</body>
+</html>

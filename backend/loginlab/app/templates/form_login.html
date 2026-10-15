@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en" data-scenario="form-login">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Login - LoginLab</title>
+    <meta data-auth-type="form_post" data-scenario="form-login">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: system-ui, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .login-card h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .login-card .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 1em;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background: #5568d3;
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border-left: 4px solid #c62828;
+        }
+
+        .hint {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+            font-size: 0.9em;
+            border-left: 4px solid #2196f3;
+        }
+
+        .hint strong {
+            display: block;
+            margin-bottom: 8px;
+            color: #1976d2;
+        }
+
+        code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <h1>Form Login</h1>
+        <p class="subtitle">Standard username/password form</p>
+
+        {% if error %}
+        <div class="error">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST" action="/form-login" data-login-form="true" id="loginForm">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    placeholder="Enter your username"
+                    data-field="username"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    placeholder="Enter your password"
+                    data-field="password"
+                    required
+                >
+            </div>
+
+            <button type="submit" class="btn" id="loginButton" data-action="login">
+                Sign In
+            </button>
+        </form>
+
+        <div class="hint">
+            <strong>Test Credentials:</strong>
+            Username: <code>testuser@loginlab.local</code><br>
+            Password: <code>TestPass123!</code>
+        </div>
+
+        <div class="hint" style="background: #f3e5f5; border-color: #9c27b0; margin-top: 10px;">
+            <strong>Detection Hints:</strong>
+            • Auth Type: <code>form_post</code><br>
+            • POST to <code>/form-login</code><br>
+            • Session cookie on success<br>
+            • Expected confidence: 95%+
+        </div>
+
+        <a href="/" class="back-link">← Back to Scenarios</a>
+    </div>
+
+    <script>
+        console.log('[LoginLab] Form login page loaded', {
+            scenario: 'form-login',
+            auth_type: 'form_post',
+            timestamp: new Date().toISOString()
+        });
+
+        document.getElementById('loginForm').addEventListener('submit', function() {
+            console.log('[LoginLab] Form submission started');
+        });
+    </script>
+</body>
+</html>
