@@ -45,7 +45,7 @@ function AtlasDetail({ node, story, onClose }) {
   return (
     <div className="fixed inset-y-0 right-0 w-[420px] bg-slate-900 border-l border-slate-800/50 shadow-2xl overflow-hidden z-30 flex flex-col">
       {/* Header */}
-      <div className="sticky top-0 bg-slate-900/95 backdrop-blur-sm border-b border-slate-800/50 p-4">
+      <div className="sticky top-0 bg-slate-900/95 backdrop-blur-xs border-b border-slate-800/50 p-4">
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-3">
             <NodeIcon node={node} />

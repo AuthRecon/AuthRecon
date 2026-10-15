@@ -5,7 +5,7 @@ function MetricCard({ label, value, icon, sublabel, allowWrap = false }) {
   return (
     <Card padding="md" className="flex items-start gap-3">
       {icon && (
-        <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-white/5 border border-[var(--stroke-dark)] flex items-center justify-center">
+        <div className="shrink-0 w-10 h-10 rounded-xl bg-white/5 border border-(--stroke-dark) flex items-center justify-center">
           <div className="text-white/60" style={{ width: 22, height: 22 }}>
             {icon}
           </div>

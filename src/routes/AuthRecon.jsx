@@ -78,12 +78,12 @@ function AuthRecon() {
                 <h1 className="text-2xl font-bold text-white">
                   AuthRecon
                 </h1>
-                <p className="text-sm text-[var(--text-secondary)] mt-1">
+                <p className="text-sm text-(--text-secondary) mt-1">
                   Authentication reconnaissance and reporting suite
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-xs text-[var(--text-muted)]">API Endpoint</p>
+                <p className="text-xs text-(--text-muted)">API Endpoint</p>
                 <p className="text-xs font-mono text-slate-100">
                   {authreconApi.defaults.baseURL}
                 </p>
@@ -94,8 +94,8 @@ function AuthRecon() {
                 {isFetching ? 'Refreshing' : 'Connected'}
               </Badge>
               {pollingEnabled && (
-                <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
-                  <span className="w-2 h-2 rounded-full bg-[var(--accent-blue)] animate-pulse" />
+                <div className="flex items-center gap-2 text-xs text-(--text-muted)">
+                  <span className="w-2 h-2 rounded-full bg-(--accent-blue) animate-pulse" />
                   Auto-refreshing
                 </div>
               )}
@@ -216,7 +216,7 @@ function AuthRecon() {
 
               {/* Show All / Show Less Button */}
               {hasMoreRuns && (
-                <div className="pt-4 border-t border-slate-800/80 mt-4">
+                <div className="pt-4 border-t border-slate-800/80">
                   <Button
                     variant="outline"
                     size="sm"

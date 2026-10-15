@@ -37,7 +37,7 @@ function Alert({ children, variant = 'default', className = '' }) {
       className={`flex items-start gap-3 px-4 py-3 rounded-lg border ${style.container} ${className}`}
       role="alert"
     >
-      <div className="flex-shrink-0 mt-0.5">{style.icon}</div>
+      <div className="shrink-0 mt-0.5">{style.icon}</div>
       <div className="flex-1 text-sm">{children}</div>
     </div>
   )

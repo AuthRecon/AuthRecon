@@ -25,11 +25,11 @@ function NodeTooltip({ node, position, visible }) {
         transform: 'translateY(-100%)',
       }}
     >
-      <div className="bg-slate-900/95 backdrop-blur-sm border border-slate-700/50 rounded-lg shadow-xl p-3 min-w-[200px] max-w-[280px]">
+      <div className="bg-slate-900/95 backdrop-blur-xs border border-slate-700/50 rounded-lg shadow-xl p-3 min-w-[200px] max-w-[280px]">
         {/* Header */}
         <div className="flex items-start gap-2 mb-2">
           <div
-            className="w-3 h-3 rounded-full mt-1 flex-shrink-0"
+            className="w-3 h-3 rounded-full mt-1 shrink-0"
             style={{ backgroundColor: node.color || severityColor }}
           />
           <div className="flex-1 min-w-0">
@@ -49,7 +49,7 @@ function NodeTooltip({ node, position, visible }) {
             <div className="flex items-center justify-between text-xs">
               <span className="text-slate-500">Score</span>
               <span
-                className="font-semibold px-1.5 py-0.5 rounded"
+                className="font-semibold px-1.5 py-0.5 rounded-sm"
                 style={{
                   backgroundColor: `${severityColor}20`,
                   color: severityColor,

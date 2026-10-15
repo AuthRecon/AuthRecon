@@ -89,7 +89,7 @@ function CopyButton({ text }) {
   return (
     <button
       onClick={handleCopy}
-      className="ml-2 p-1 hover:bg-slate-600/50 rounded transition-colors"
+      className="ml-2 p-1 hover:bg-slate-600/50 rounded-sm transition-colors"
       title="Copy to clipboard"
     >
       {copied ? (
@@ -104,7 +104,7 @@ function CopyButton({ text }) {
 function CopyableField({ value, className = '' }) {
   return (
     <div className={`flex items-center ${className}`}>
-      <code className="bg-slate-700/50 px-2 py-1 rounded text-sm font-mono truncate">{value}</code>
+      <code className="bg-slate-700/50 px-2 py-1 rounded-sm text-sm font-mono truncate">{value}</code>
       <CopyButton text={value} />
     </div>
   )
@@ -116,15 +116,26 @@ function LoginLabPanel() {
   const disableMutation = useDisableLoginLab()
   const [duration, setDuration] = useState(30)
 
+  // Failures are shown below from the mutation's error state.
   const handleEnable = async () => {
-    await enableMutation.mutateAsync(duration)
+    try {
+      await enableMutation.mutateAsync(duration)
+    } catch {
+      /* shown below */
+    }
   }
 
   const handleDisable = async () => {
     if (window.confirm('Are you sure you want to disable LoginLab? Any active training sessions will be interrupted.')) {
-      await disableMutation.mutateAsync()
+      try {
+        await disableMutation.mutateAsync()
+      } catch {
+        /* shown below */
+      }
     }
   }
+
+  const mutationError = enableMutation.error || disableMutation.error
 
   const isActive = status?.active
   const remainingMinutes = Math.ceil((status?.remaining_seconds || 0) / 60)
@@ -138,7 +149,7 @@ function LoginLabPanel() {
     >
       {/* Warning Banner */}
       <div className="flex items-start gap-4 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl">
-        <AlertTriangle className="w-6 h-6 text-amber-400 flex-shrink-0 mt-0.5" />
+        <AlertTriangle className="w-6 h-6 text-amber-400 shrink-0 mt-0.5" />
         <div>
           <p className="text-sm font-medium text-amber-300">Security Notice</p>
           <p className="text-sm text-amber-200/70 mt-1">
@@ -248,9 +259,9 @@ function LoginLabPanel() {
       </div>
 
       {/* Error Display */}
-      {(enableMutation.error || disableMutation.error) && (
+      {mutationError && (
         <p className="text-sm text-rose-400">
-          {enableMutation.error?.message || disableMutation.error?.message || 'An error occurred'}
+          {mutationError.response?.data?.detail || mutationError.message || 'An error occurred'}
         </p>
       )}
 
@@ -262,7 +273,7 @@ function LoginLabPanel() {
             AuthRecon Scan Targets
           </h3>
           <p className="text-sm text-slate-400 mb-4">
-            Copy these URLs and credentials for AuthRecon scans. Use the <code className="bg-slate-700/50 px-1.5 py-0.5 rounded text-xs">loginlab:5500</code> hostname (Docker internal network).
+            Copy these URLs and credentials for AuthRecon scans. Use the <code className="bg-slate-700/50 px-1.5 py-0.5 rounded-sm text-xs">loginlab:5500</code> hostname (Docker internal network).
           </p>
 
           <div className="space-y-3">
@@ -272,10 +283,10 @@ function LoginLabPanel() {
                 className={`overflow-hidden rounded-xl border border-slate-700/50 ${scenario.borderColor} border-l-4`}
               >
                 {/* Colored Header */}
-                <div className={`px-4 py-3 bg-gradient-to-r ${scenario.color}`}>
+                <div className={`px-4 py-3 bg-linear-to-r ${scenario.color}`}>
                   <div className="flex items-center justify-between">
                     <h4 className="font-medium text-white">{scenario.name}</h4>
-                    <span className="text-xs px-2 py-1 bg-white/20 rounded text-white/90">
+                    <span className="text-xs px-2 py-1 bg-white/20 rounded-sm text-white/90">
                       {scenario.authType}
                     </span>
                   </div>
@@ -304,8 +315,8 @@ function LoginLabPanel() {
 
           <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
             <p className="text-xs text-blue-300">
-              <strong>Note:</strong> Use <code className="bg-blue-500/20 px-1.5 py-0.5 rounded">http://loginlab:5500</code> for AuthRecon scans (Docker internal).
-              Use <code className="bg-blue-500/20 px-1.5 py-0.5 rounded">http://localhost:5500</code> only for browser preview (if port is exposed).
+              <strong>Note:</strong> Use <code className="bg-blue-500/20 px-1.5 py-0.5 rounded-sm">http://loginlab:5500</code> for AuthRecon scans (Docker internal).
+              Use <code className="bg-blue-500/20 px-1.5 py-0.5 rounded-sm">http://localhost:5500</code> only for browser preview (if port is exposed).
             </p>
           </div>
         </div>

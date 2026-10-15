@@ -442,7 +442,7 @@ function AuthReconLaunch() {
   const stageHeaderActions = (
     <Button
       type="button"
-      variant={consoleCollapsed ? 'outline' : 'ghost'}
+      variant={consoleCollapsed ? 'outline-solid' : 'ghost'}
       size="sm"
       onClick={() => setConsoleCollapsed((prev) => !prev)}
     >
@@ -466,7 +466,7 @@ function AuthReconLaunch() {
           </div>
           <Card
             padding="lg"
-            className={`border border-[var(--stroke-dark)] shadow-[var(--shadow-card)] transition-all duration-700 ease-in-out ${
+            className={`border border-(--stroke-dark) shadow-(--shadow-card) transition-all duration-700 ease-in-out ${
               isCardAnimating ? 'launch-card-anim relative overflow-hidden' : ''
             } ${
               formCollapsed
@@ -511,7 +511,7 @@ function AuthReconLaunch() {
                     value="auto"
                     checked={recordingMode === 'auto'}
                     onChange={(e) => setRecordingMode(e.target.value)}
-                    className="mt-0.5 w-4 h-4 rounded-full border-slate-700 bg-slate-900 text-[var(--accent-blue)] focus:ring-[var(--stroke-blue)] focus:ring-offset-0 focus:ring-2"
+                    className="mt-0.5 w-4 h-4 rounded-full border-slate-700 bg-slate-900 text-(--accent-blue) focus:ring-(--stroke-blue) focus:ring-offset-0 focus:ring-2"
                   />
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
@@ -532,7 +532,7 @@ function AuthReconLaunch() {
                     value="manual"
                     checked={recordingMode === 'manual'}
                     onChange={(e) => setRecordingMode(e.target.value)}
-                    className="mt-0.5 w-4 h-4 rounded-full border-slate-700 bg-slate-900 text-[var(--accent-blue)] focus:ring-[var(--stroke-blue)] focus:ring-offset-0 focus:ring-2"
+                    className="mt-0.5 w-4 h-4 rounded-full border-slate-700 bg-slate-900 text-(--accent-blue) focus:ring-(--stroke-blue) focus:ring-offset-0 focus:ring-2"
                   />
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
@@ -599,7 +599,7 @@ function AuthReconLaunch() {
                           id="auth-type"
                           value={authTypeOverride}
                           onChange={(e) => setAuthTypeOverride(e.target.value)}
-                          className="input-field w-full px-4 py-2.5 bg-transparent border border-slate-800/80 rounded-xl text-slate-100 text-sm focus:outline-none focus:border-[var(--stroke-blue)] appearance-none"
+                          className="input-field w-full px-4 py-2.5 bg-transparent border border-slate-800/80 rounded-xl text-slate-100 text-sm focus:outline-hidden focus:border-(--stroke-blue) appearance-none"
                         >
                           {AUTH_TYPE_OPTIONS.map((option) => (
                             <option key={option.value || 'auto'} value={option.value}>
@@ -650,7 +650,7 @@ function AuthReconLaunch() {
                                 setSelectedEngines(selectedEngines.filter(eng => eng !== 'selenium'))
                               }
                             }}
-                            className="mt-0.5 w-4 h-4 rounded border-slate-700 bg-slate-900 text-[var(--accent-blue)] focus:ring-[var(--stroke-blue)] focus:ring-offset-0 focus:ring-2"
+                            className="mt-0.5 w-4 h-4 rounded-sm border-slate-700 bg-slate-900 text-(--accent-blue) focus:ring-(--stroke-blue) focus:ring-offset-0 focus:ring-2"
                           />
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
@@ -674,7 +674,7 @@ function AuthReconLaunch() {
                                 setSelectedEngines(selectedEngines.filter(eng => eng !== 'playwright'))
                               }
                             }}
-                            className="mt-0.5 w-4 h-4 rounded border-slate-700 bg-slate-900 text-[var(--accent-blue)] focus:ring-[var(--stroke-blue)] focus:ring-offset-0 focus:ring-2"
+                            className="mt-0.5 w-4 h-4 rounded-sm border-slate-700 bg-slate-900 text-(--accent-blue) focus:ring-(--stroke-blue) focus:ring-offset-0 focus:ring-2"
                           />
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
@@ -698,7 +698,7 @@ function AuthReconLaunch() {
                                 setSelectedEngines(selectedEngines.filter(eng => eng !== 'httpx'))
                               }
                             }}
-                            className="mt-0.5 w-4 h-4 rounded border-slate-700 bg-slate-900 text-[var(--accent-blue)] focus:ring-[var(--stroke-blue)] focus:ring-offset-0 focus:ring-2"
+                            className="mt-0.5 w-4 h-4 rounded-sm border-slate-700 bg-slate-900 text-(--accent-blue) focus:ring-(--stroke-blue) focus:ring-offset-0 focus:ring-2"
                           />
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
@@ -735,8 +735,8 @@ function AuthReconLaunch() {
                       type="button"
                       className={`px-4 py-2 rounded-2xl border text-sm ${
                         mode === option.id
-                          ? 'border-[var(--stroke-blue)] bg-[var(--sidebar-active-bg)] text-[var(--text-primary)]'
-                          : 'border-[var(--stroke-dark)] text-[var(--text-secondary)] hover:border-[var(--stroke-blue)]'
+                          ? 'border-(--stroke-blue) bg-(--sidebar-active-bg) text-(--text-primary)'
+                          : 'border-(--stroke-dark) text-(--text-secondary) hover:border-(--stroke-blue)'
                       }`}
                       onClick={() => setMode(option.id)}
                     >
@@ -774,7 +774,7 @@ function AuthReconLaunch() {
                     id="saveCredential"
                     checked={showSaveCredential}
                     onChange={(e) => setShowSaveCredential(e.target.checked)}
-                    className="mt-1 w-4 h-4 rounded border-slate-700 bg-slate-900 focus:ring-[var(--accent-blue)] focus:ring-offset-slate-950"
+                    className="mt-1 w-4 h-4 rounded-sm border-slate-700 bg-slate-900 focus:ring-(--accent-blue) focus:ring-offset-slate-950"
                     style={{ accentColor: 'var(--accent-blue)' }}
                   />
                   <div className="flex-1">
@@ -812,8 +812,8 @@ function AuthReconLaunch() {
                         key={credential.id}
                         className={`flex items-center justify-between p-4 rounded-2xl border cursor-pointer ${
                           selectedCredentialId === credential.id
-                            ? 'border-[var(--stroke-blue)] bg-[var(--sidebar-active-bg)]'
-                            : 'border-[var(--stroke-dark)] hover:border-[var(--stroke-blue)]'
+                            ? 'border-(--stroke-blue) bg-(--sidebar-active-bg)'
+                            : 'border-(--stroke-dark) hover:border-(--stroke-blue)'
                         }`}
                       >
                         <div>
@@ -862,7 +862,7 @@ function AuthReconLaunch() {
                     <div key={role.id} className="p-4 rounded-2xl border border-slate-700/60">
                       <div className="flex items-center justify-between mb-4">
                         <input
-                          className="text-base font-semibold bg-transparent border-b border-transparent focus:border-[var(--accent-blue)] outline-none text-slate-100 flex-1 mr-4"
+                          className="text-base font-semibold bg-transparent border-b border-transparent focus:border-(--accent-blue) outline-hidden text-slate-100 flex-1 mr-4"
                           value={role.label}
                           onChange={(e) => {
                             const next = [...roles]
@@ -915,7 +915,7 @@ function AuthReconLaunch() {
                               next[index].authType = e.target.value
                               setRoles(next)
                             }}
-                            className="input-field w-full px-4 py-2.5 bg-transparent border border-slate-800/80 rounded-xl text-slate-100 text-sm focus:outline-none focus:border-[var(--stroke-blue)] appearance-none"
+                            className="input-field w-full px-4 py-2.5 bg-transparent border border-slate-800/80 rounded-xl text-slate-100 text-sm focus:outline-hidden focus:border-(--stroke-blue) appearance-none"
                           >
                             {AUTH_TYPE_OPTIONS.map((option) => (
                               <option key={`${role.id}-${option.value || 'auto'}`} value={option.value}>
@@ -950,7 +950,7 @@ function AuthReconLaunch() {
                     id="streamingEnabled"
                     checked={streamingEnabled}
                     onChange={(e) => setStreamingEnabled(e.target.checked)}
-                    className="mt-1 w-4 h-4 rounded border-slate-700 bg-slate-900 focus:ring-[var(--accent-blue)] focus:ring-offset-slate-950"
+                    className="mt-1 w-4 h-4 rounded-sm border-slate-700 bg-slate-900 focus:ring-(--accent-blue) focus:ring-offset-slate-950"
                     style={{ accentColor: 'var(--accent-blue)' }}
                   />
                   <div className="flex-1">
@@ -1012,9 +1012,9 @@ function AuthReconLaunch() {
 
             {launchPhase === 'preflight' && (
               <div className="pt-4">
-                <div className="rounded-2xl border border-[var(--stroke-blue)] bg-[var(--bg-1)] p-4 shadow-[var(--shadow-card)]">
-                  <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-[var(--text-secondary)] mb-3">
-                    <Sparkles className="w-3.5 h-3.5 text-[var(--accent-blue)]" />
+                <div className="rounded-2xl border border-(--stroke-blue) bg-(--bg-1) p-4 shadow-(--shadow-card)">
+                  <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-(--text-secondary) mb-3">
+                    <Sparkles className="w-3.5 h-3.5 text-(--accent-blue)" />
                     Initialization
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -1025,13 +1025,13 @@ function AuthReconLaunch() {
                           key={message}
                           className={`flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-mono transition ${
                             status === 'active'
-                              ? 'border-[var(--stroke-blue)] text-[var(--text-primary)] bg-[var(--sidebar-active-bg)]'
-                              : 'border-slate-800/70 text-[var(--text-muted)]'
+                              ? 'border-(--stroke-blue) text-(--text-primary) bg-(--sidebar-active-bg)'
+                              : 'border-slate-800/70 text-(--text-muted)'
                           }`}
                         >
                           <span
                             className={`h-2 w-2 rounded-full ${
-                              status === 'active' ? 'bg-[var(--accent-blue)] animate-pulse' : 'bg-slate-600'
+                              status === 'active' ? 'bg-(--accent-blue) animate-pulse' : 'bg-slate-600'
                             }`}
                           />
                           {message}
@@ -1087,23 +1087,23 @@ function AuthReconLaunch() {
           </h3>
           <ul className="space-y-2 text-sm text-slate-400">
             <li className="flex items-start gap-2">
-              <span className="text-[var(--accent-blue)] mt-0.5">•</span>
+              <span className="text-(--accent-blue) mt-0.5">•</span>
               <span>AuthRecon will navigate to the target URL and detect the authentication type</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-[var(--accent-blue)] mt-0.5">•</span>
+              <span className="text-(--accent-blue) mt-0.5">•</span>
               <span>Credentials will be tested to verify successful authentication</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-[var(--accent-blue)] mt-0.5">•</span>
+              <span className="text-(--accent-blue) mt-0.5">•</span>
               <span>Technology stack will be fingerprinted (JS frameworks, libraries, security headers)</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-[var(--accent-blue)] mt-0.5">•</span>
+              <span className="text-(--accent-blue) mt-0.5">•</span>
               <span>Results will include session cookies, auth patterns, and reconnaissance data</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-[var(--accent-blue)] mt-0.5">•</span>
+              <span className="text-(--accent-blue) mt-0.5">•</span>
               <span>Typical run time: 30-60 seconds</span>
             </li>
           </ul>

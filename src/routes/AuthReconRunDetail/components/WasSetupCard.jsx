@@ -27,13 +27,13 @@ function Field({ label, value, hint, mono = true }) {
     <div className="space-y-1">
       <p className="text-xs uppercase tracking-wide text-slate-500">{label}</p>
       <div className="flex items-center gap-2">
-        <code className={`flex-1 min-w-0 px-3 py-2 rounded-lg bg-[var(--bg-1)] border border-[var(--stroke-dark)] text-sm text-slate-200 break-all ${mono ? 'font-mono' : ''}`}>
+        <code className={`flex-1 min-w-0 px-3 py-2 rounded-lg bg-(--bg-1) border border-(--stroke-dark) text-sm text-slate-200 break-all ${mono ? 'font-mono' : ''}`}>
           {value}
         </code>
         <button
           type="button"
           onClick={async () => { if (await copyText(value)) { setCopied(true); setTimeout(() => setCopied(false), 1500) } }}
-          className="flex-shrink-0 p-2 rounded-lg border border-[var(--stroke-dark)] text-slate-400 hover:text-[var(--accent-blue)] hover:border-[var(--stroke-blue)]"
+          className="shrink-0 p-2 rounded-lg border border-(--stroke-dark) text-slate-400 hover:text-(--accent-blue) hover:border-(--stroke-blue)"
           title={`Copy ${label.toLowerCase()}`}
         >
           {copied ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
@@ -51,7 +51,7 @@ function VerificationStatus({ verification }) {
   const { status } = verification
   if (status === 'queued' || status === 'running') {
     return (
-      <span className="inline-flex items-center gap-1.5 text-xs text-[var(--accent-blue)]">
+      <span className="inline-flex items-center gap-1.5 text-xs text-(--accent-blue)">
         <Loader2 className="w-3.5 h-3.5 animate-spin" /> {status === 'queued' ? 'Queued…' : 'Replaying in a clean browser…'}
       </span>
     )
@@ -65,7 +65,7 @@ function VerificationStatus({ verification }) {
   }
   return (
     <span className="inline-flex items-start gap-1.5 text-xs text-rose-300">
-      <XCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+      <XCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
       <span>
         {verification.failed_step
           ? `Replay broke at step ${verification.failed_step} (${verification.step}): ${verification.message}`
@@ -120,10 +120,10 @@ function WasSetupCard({ runId, setup, onChanged }) {
   }
 
   return (
-    <Card padding="lg" className="border-[var(--stroke-blue)]">
+    <Card padding="lg" className="border-(--stroke-blue)">
       <div className="flex flex-wrap items-start justify-between gap-3 mb-5">
         <div>
-          <p className="text-xs uppercase tracking-widest text-[var(--accent-blue)]">Scan configuration</p>
+          <p className="text-xs uppercase tracking-widest text-(--accent-blue)">Scan configuration</p>
           <h3 className="text-lg font-semibold text-slate-50">Tenable WAS setup</h3>
           <p className="text-sm text-slate-400">Authentication: {setup.method_label}</p>
         </div>
@@ -135,13 +135,21 @@ function WasSetupCard({ runId, setup, onChanged }) {
           hint="The page the login lands on; the scanner checks it to confirm it is still logged in." />
         <Field label="Pattern to verify (regex)" value={setup.pattern_regex}
           hint={setup.pattern_to_verify ? `Matches the text "${setup.pattern_to_verify}" on that page.` : undefined} />
+        {setup.pattern_missing && (
+          <div className="space-y-1">
+            <p className="text-xs uppercase tracking-wide text-slate-500">Pattern to verify (regex)</p>
+            <p className="px-3 py-2 rounded-lg border border-amber-500/40 bg-amber-500/10 text-sm text-amber-200">
+              Not found automatically. Enter text that only appears when logged in (see the note below).
+            </p>
+          </div>
+        )}
       </div>
 
       {setup.scripts?.length > 0 && (
         <div className="mt-5 space-y-2">
           <p className="text-xs uppercase tracking-wide text-slate-500">Selenium script{setup.scripts.length > 1 ? 's' : ''}</p>
           {setup.scripts.map(script => (
-            <div key={script.artifact_id} className="p-3 rounded-lg border border-[var(--stroke-dark)] bg-[var(--bg-2)] space-y-2">
+            <div key={script.artifact_id} className="p-3 rounded-lg border border-(--stroke-dark) bg-(--bg-2) space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-slate-200 truncate">{script.name}</p>

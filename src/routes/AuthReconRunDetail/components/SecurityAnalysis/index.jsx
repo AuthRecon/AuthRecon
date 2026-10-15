@@ -51,7 +51,7 @@ function SecurityAnalysis({ securityContext }) {
   return (
     <div className="space-y-6">
       {/* Overall Security Score */}
-      <Card padding="lg" className="border-slate-700/50 bg-gradient-to-br from-slate-800/30 to-slate-900/20">
+      <Card padding="lg" className="border-slate-700/50 bg-linear-to-br from-slate-800/30 to-slate-900/20">
         <div className="flex items-center justify-between mb-6">
           <div>
             <div className="flex items-center gap-3 mb-2">

@@ -23,7 +23,7 @@ function SettingsPage() {
     <div className="flex-1 flex flex-col overflow-hidden">
       <Header title="Settings" subtitle="Your account, AI clients, users and security" />
       <div className="flex-1 flex overflow-hidden">
-      <aside className="w-72 border-r border-[var(--stroke-dark)] p-6 overflow-y-auto">
+      <aside className="w-72 border-r border-(--stroke-dark) p-6 overflow-y-auto">
         <ConnectorTabs activeTab={activeTab} onChange={setActiveTab} />
       </aside>
       <main className="flex-1 overflow-y-auto p-6 space-y-6">

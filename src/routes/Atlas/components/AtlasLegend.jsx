@@ -13,7 +13,7 @@ function AtlasLegend({ story, className = '' }) {
 
   return (
     <div
-      className={`bg-slate-900/90 backdrop-blur-sm border border-slate-800/50 rounded-lg p-3 space-y-2 ${className}`}
+      className={`bg-slate-900/90 backdrop-blur-xs border border-slate-800/50 rounded-lg p-3 space-y-2 ${className}`}
     >
       <div className="text-xs font-semibold text-slate-400 mb-2">Legend</div>
 
@@ -36,7 +36,7 @@ function LegendItem({ item }) {
     return (
       <div className="flex items-center gap-2">
         <div
-          className="w-3 h-3 rounded-full shadow-sm"
+          className="w-3 h-3 rounded-full shadow-xs"
           style={{ backgroundColor: item.color }}
         />
         <div className="flex-1">
@@ -106,7 +106,7 @@ function LegendItem({ item }) {
     )
   }
 
-  if (item.type === 'ring') {
+  if (item.type === 'ring-3') {
     return (
       <div className="flex items-center gap-2">
         <div className="relative w-4 h-4">

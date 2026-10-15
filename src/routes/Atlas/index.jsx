@@ -138,7 +138,7 @@ function Atlas() {
                   onClick={() => setViewMode('graph')}
                   className={`px-3 py-2 rounded-md transition-colors ${
                     viewMode === 'graph'
-                      ? 'bg-[var(--sidebar-active-bg)] text-[var(--accent-blue)]'
+                      ? 'bg-(--sidebar-active-bg) text-(--accent-blue)'
                       : 'text-slate-400 hover:text-slate-300'
                   }`}
                   title="Graph View"
@@ -149,7 +149,7 @@ function Atlas() {
                   onClick={() => setViewMode('list')}
                   className={`px-3 py-2 rounded-md transition-colors ${
                     viewMode === 'list'
-                      ? 'bg-[var(--sidebar-active-bg)] text-[var(--accent-blue)]'
+                      ? 'bg-(--sidebar-active-bg) text-(--accent-blue)'
                       : 'text-slate-400 hover:text-slate-300'
                   }`}
                   title="List View"
@@ -170,7 +170,7 @@ function Atlas() {
         }
       />
       {/* Toolbar (z-50 so dropdowns float above the graph) */}
-      <div className="border-b border-[var(--stroke-dark)] relative z-50">
+      <div className="border-b border-(--stroke-dark) relative z-50">
         <div className="px-6 py-3">
           {/* Controls bar */}
           <div>
@@ -322,7 +322,7 @@ function Atlas() {
                           </div>
                         )}
                         <div
-                          className="px-2 py-1 rounded text-xs font-medium"
+                          className="px-2 py-1 rounded-sm text-xs font-medium"
                           style={{
                             backgroundColor: `${getSeverityColor(node.severity)}20`,
                             color: getSeverityColor(node.severity),

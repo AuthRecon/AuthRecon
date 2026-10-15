@@ -116,7 +116,7 @@ function CreateKey({ url }) {
     return (
       <div className="space-y-4">
         <div className="flex items-start gap-2 p-3 rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-100 text-xs">
-          <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+          <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
           <span>
             This is the only time the key <span className="font-semibold">{created.name}</span> is shown. It's already
             filled into the commands below — copy what you need now. Anyone with it can act as you in AuthRecon.
@@ -361,7 +361,7 @@ function AiMcpPanel() {
         )}
         {isInsecureRemote(url) && (
           <p className="flex items-start gap-2 text-xs text-amber-200">
-            <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+            <AlertTriangle className="w-4 h-4 shrink-0" />
             This address is plain HTTP. Your key would cross the network unencrypted: put AuthRecon behind HTTPS before
             connecting from another machine.
           </p>

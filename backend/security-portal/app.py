@@ -818,6 +818,8 @@ def create_app(config_path: Optional[Path] = None) -> FastAPI:
                     resp = await client.get(f"{LOGINLAB_URL}{path}", headers=headers)
                 else:
                     resp = await client.post(f"{LOGINLAB_URL}{path}", headers=headers)
+                if resp.status_code >= 400:
+                    return {"error": f"LoginLab answered HTTP {resp.status_code}", "active": False, "available": False}
                 return resp.json()
         except httpx.ConnectError:
             return {"error": "LoginLab service not running", "active": False, "available": False}
@@ -829,6 +831,15 @@ def create_app(config_path: Optional[Path] = None) -> FastAPI:
         """Get LoginLab status (public - only returns active/inactive state)."""
         result = await _loginlab_request("GET", "/api/loginlab/status")
         result["available"] = "error" not in result or result.get("active", False)
+        return result
+
+    def _loginlab_or_503(result: dict) -> dict:
+        """Turn a failed enable/disable into an HTTP error the UI can show,
+        instead of a 200 whose body carries the error."""
+        if "error" in result:
+            hint = (" Start it with: docker compose --profile loginlab up -d loginlab"
+                    if result["error"] == "LoginLab service not running" else "")
+            raise HTTPException(status_code=503, detail=f"{result['error']}.{hint}")
         return result
 
     @app.post("/api/loginlab/enable")
@@ -845,7 +856,7 @@ def create_app(config_path: Optional[Path] = None) -> FastAPI:
         audit.emit(audit.LOGINLAB_ENABLED, actor_username=user.username, detail=f"{duration_minutes} minutes")
 
         result = await _loginlab_request("POST", f"/api/loginlab/enable?duration_minutes={duration_minutes}", user)
-        return result
+        return _loginlab_or_503(result)
 
     @app.post("/api/loginlab/disable")
     async def loginlab_disable(user: SessionUser = Depends(get_current_user_from_token)):
@@ -857,7 +868,7 @@ def create_app(config_path: Optional[Path] = None) -> FastAPI:
         audit.emit(audit.LOGINLAB_DISABLED, actor_username=user.username)
 
         result = await _loginlab_request("POST", "/api/loginlab/disable", user)
-        return result
+        return _loginlab_or_503(result)
 
     @app.post("/api/service/auth/login")
     async def service_auth_login(payload: ServiceLoginRequest = Body(...), request: Request = None):

@@ -21,7 +21,7 @@ function AuthFlowSummary({ flowSummary }) {
     <Card padding="lg">
       <div className="flex items-start gap-3 mb-4">
         <div className="p-2 rounded-lg bg-slate-800/50">
-          <FileText className="w-5 h-5 text-[--accent-blue]" style={{ color: 'var(--accent-blue)' }} />
+          <FileText className="w-5 h-5 text-(--accent-blue)" style={{ color: 'var(--accent-blue)' }} />
         </div>
         <div>
           <h3 className="text-lg font-semibold text-slate-50">

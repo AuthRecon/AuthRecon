@@ -160,18 +160,18 @@ function Dashboard() {
             <div className="dashboard-hero-content space-y-6">
               <div className="flex flex-wrap items-start justify-between gap-6">
                 <div className="space-y-3 max-w-3xl">
-                  <div className="flex items-center gap-2 text-[var(--text-secondary)] uppercase text-xs tracking-[0.2em]">
-                    <Sparkles className="w-4 h-4 text-[var(--accent-blue)]" />
+                  <div className="flex items-center gap-2 text-(--text-secondary) uppercase text-xs tracking-[0.2em]">
+                    <Sparkles className="w-4 h-4 text-(--accent-blue)" />
                     Live AuthRecon Telemetry
                   </div>
                   <h1 className="text-3xl font-semibold text-white">
                     AuthRecon Control Center
                   </h1>
-                  <p className="text-sm text-[var(--text-muted)] max-w-2xl">
+                  <p className="text-sm text-(--text-muted) max-w-2xl">
                     Every metric below is sourced directly from the AuthRecon backend. Queue depth, success rate,
                     and recent targets update automatically whenever jobs are running.
                   </p>
-                  <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--text-secondary)]">
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-(--text-secondary)">
                     <Badge variant={connectionBadge.variant} dot>
                       {connectionBadge.label}
                     </Badge>
@@ -206,17 +206,17 @@ function Dashboard() {
                       Sync data
                     </Button>
                   </div>
-                  <p className="text-xs text-[var(--text-secondary)]">
+                  <p className="text-xs text-(--text-secondary)">
                     Auto-refresh {metrics?.activeCount ? 'enabled while runs are active' : 'idle until new jobs queue'}
                   </p>
                 </div>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {heroStats.map((stat) => (
-                  <div key={stat.id} className="rounded-2xl border border-white/5 bg-white/5 backdrop-blur-sm p-4">
-                    <p className="text-xs uppercase tracking-wide text-[var(--text-muted)]">{stat.label}</p>
+                  <div key={stat.id} className="rounded-2xl border border-white/5 bg-white/5 backdrop-blur-xs p-4">
+                    <p className="text-xs uppercase tracking-wide text-(--text-muted)">{stat.label}</p>
                     <p className="text-2xl font-semibold text-white mt-1">{stat.value}</p>
-                    <p className="text-xs text-[var(--text-secondary)] mt-1">{stat.detail}</p>
+                    <p className="text-xs text-(--text-secondary) mt-1">{stat.detail}</p>
                   </div>
                 ))}
               </div>
@@ -254,7 +254,7 @@ function Dashboard() {
                     </div>
                     <div className="space-y-1">
                       <p className="text-sm font-semibold text-white">{action.label}</p>
-                      <p className="text-xs text-[var(--text-secondary)] leading-snug">
+                      <p className="text-xs text-(--text-secondary) leading-snug">
                         {action.description}
                       </p>
                     </div>
@@ -268,35 +268,35 @@ function Dashboard() {
             <Card padding="lg" className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs uppercase text-[var(--text-muted)]">Worker Health</p>
+                  <p className="text-xs uppercase text-(--text-muted)">Worker Health</p>
                   <h3 className="text-xl font-semibold text-white">AuthRecon status</h3>
                 </div>
                 <Badge variant={connectionBadge.variant}>{connectionBadge.label}</Badge>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="rounded-xl border border-white/5 p-3">
-                  <p className="text-xs text-[var(--text-muted)] uppercase">Jobs running</p>
+                  <p className="text-xs text-(--text-muted) uppercase">Jobs running</p>
                   <p className="text-xl font-semibold text-white">{formatNumber(metrics?.runningCount ?? 0)}</p>
-                  <p className="text-xs text-[var(--text-secondary)]">active browser sessions</p>
+                  <p className="text-xs text-(--text-secondary)">active browser sessions</p>
                 </div>
                 <div className="rounded-xl border border-white/5 p-3">
-                  <p className="text-xs text-[var(--text-muted)] uppercase">Queue depth</p>
+                  <p className="text-xs text-(--text-muted) uppercase">Queue depth</p>
                   <p className="text-xl font-semibold text-white">{formatNumber(metrics?.queuedCount ?? 0)}</p>
-                  <p className="text-xs text-[var(--text-secondary)]">awaiting workers</p>
+                  <p className="text-xs text-(--text-secondary)">awaiting workers</p>
                 </div>
                 <div className="rounded-xl border border-white/5 p-3">
-                  <p className="text-xs text-[var(--text-muted)] uppercase">Failures (24h)</p>
+                  <p className="text-xs text-(--text-muted) uppercase">Failures (24h)</p>
                   <p className="text-xl font-semibold text-white">{formatNumber(metrics?.failureCount24h ?? 0)}</p>
-                  <p className="text-xs text-[var(--text-secondary)]">review in run history</p>
+                  <p className="text-xs text-(--text-secondary)">review in run history</p>
                 </div>
                 <div className="rounded-xl border border-white/5 p-3">
-                  <p className="text-xs text-[var(--text-muted)] uppercase">API endpoint</p>
-                  <p className="text-xs font-mono text-[var(--accent-blue-soft)] break-all">
+                  <p className="text-xs text-(--text-muted) uppercase">API endpoint</p>
+                  <p className="text-xs font-mono text-(--accent-blue-soft) break-all">
                     {authreconApi.defaults.baseURL}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 text-sm text-[var(--text-secondary)]">
+              <div className="flex items-center gap-3 text-sm text-(--text-secondary)">
                 {error ? (
                   <>
                     <AlertTriangle className="w-4 h-4 text-rose-400" />
@@ -304,12 +304,12 @@ function Dashboard() {
                   </>
                 ) : metrics?.activeCount ? (
                   <>
-                    <Activity className="w-4 h-4 text-[var(--accent-blue)]" />
+                    <Activity className="w-4 h-4 text-(--accent-blue)" />
                     Worker processing {formatNumber(metrics.activeCount)} active job{metrics.activeCount === 1 ? '' : 's'} right now.
                   </>
                 ) : (
                   <>
-                    <Clock3 className="w-4 h-4 text-[var(--accent-blue-soft)]" />
+                    <Clock3 className="w-4 h-4 text-(--accent-blue-soft)" />
                     Queue idle — ready for the next submission.
                   </>
                 )}
@@ -319,7 +319,7 @@ function Dashboard() {
             <Card padding="lg" className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs uppercase text-[var(--text-muted)]">Run activity</p>
+                  <p className="text-xs uppercase text-(--text-muted)">Run activity</p>
                   <h3 className="text-xl font-semibold text-white">7-day trend</h3>
                 </div>
                 <Badge variant="info">{metrics?.last7dCount ? `${formatNumber(metrics.last7dCount)} runs` : 'Awaiting data'}</Badge>
@@ -349,16 +349,16 @@ function Dashboard() {
                   <div className="absolute inset-0 pointer-events-none rounded-2xl ring-1 ring-white/5" />
                 </div>
               ) : (
-                <div className="h-32 flex items-center justify-center text-sm text-[var(--text-secondary)] border border-dashed border-white/10 rounded-2xl">
+                <div className="h-32 flex items-center justify-center text-sm text-(--text-secondary) border border-dashed border-white/10 rounded-2xl">
                   No historical data to plot yet.
                 </div>
               )}
-              <div className="flex flex-wrap gap-4 text-xs text-[var(--text-secondary)]">
+              <div className="flex flex-wrap gap-4 text-xs text-(--text-secondary)">
                 {(metrics?.series || []).map((point) => (
                   <div key={point.key} className="space-y-1">
                     <p className="font-semibold text-white/80">{point.label}</p>
                     <p>{formatNumber(point.total)} runs</p>
-                    <p className="text-[var(--accent-blue-soft)]">
+                    <p className="text-(--accent-blue-soft)">
                       {formatNumber(point.succeeded)} ok / {formatNumber(point.failed)} fail
                     </p>
                   </div>
@@ -369,7 +369,7 @@ function Dashboard() {
             <Card padding="lg" className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs uppercase text-[var(--text-muted)]">Recent activity</p>
+                  <p className="text-xs uppercase text-(--text-muted)">Recent activity</p>
                   <h3 className="text-xl font-semibold text-white">Latest AuthRecon runs</h3>
                 </div>
                 <Button
@@ -378,22 +378,22 @@ function Dashboard() {
                   icon={ArrowRight}
                   iconPosition="right"
                   onClick={() => navigate('/authrecon')}
-                  className="whitespace-nowrap flex-shrink-0"
+                  className="whitespace-nowrap shrink-0"
                 >
                   View runs
                 </Button>
               </div>
               {isLoading ? (
-                <div className="py-10 flex items-center justify-center text-[var(--text-secondary)]">
+                <div className="py-10 flex items-center justify-center text-(--text-secondary)">
                   Loading runs…
                 </div>
               ) : error ? (
                 <div className="py-10 text-center text-sm">
                   <p className="text-rose-400 font-medium">Unable to load AuthRecon runs.</p>
-                  <p className="text-[var(--text-muted)] mt-1">{error.message || 'Unexpected error from API.'}</p>
+                  <p className="text-(--text-muted) mt-1">{error.message || 'Unexpected error from API.'}</p>
                 </div>
               ) : !latestRuns.length ? (
-                <div className="py-10 text-center text-[var(--text-secondary)]">
+                <div className="py-10 text-center text-(--text-secondary)">
                   No runs yet — launch your first run to populate this feed.
                 </div>
               ) : (
@@ -402,15 +402,15 @@ function Dashboard() {
                     <Link
                       key={run.id}
                       to={`/authrecon/run/${run.id}`}
-                      className="flex flex-col gap-1 rounded-2xl border border-white/5 p-4 hover:border-[var(--accent-blue)]/40 hover:bg-white/5 transition"
+                      className="flex flex-col gap-1 rounded-2xl border border-white/5 p-4 hover:border-(--accent-blue)/40 hover:bg-white/5 transition"
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2 min-w-0 flex-1">
-                          <Target className="w-4 h-4 flex-shrink-0 text-[var(--accent-blue)]" />
+                          <Target className="w-4 h-4 shrink-0 text-(--accent-blue)" />
                           <p className="text-sm text-white truncate" title={run.target_url}>{run.target_url || 'Unknown target'}</p>
                         </div>
                         <Badge
-                          className="flex-shrink-0"
+                          className="shrink-0"
                           variant={
                             run.status === 'succeeded'
                               ? 'success'
@@ -423,7 +423,7 @@ function Dashboard() {
                           {run.status}
                         </Badge>
                       </div>
-                      <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--text-secondary)]">
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-(--text-secondary)">
                         <span>{run.auth_type || 'unknown'} auth</span>
                         <span>•</span>
                         <span>{formatRelativeTime(run.submitted_at)}</span>

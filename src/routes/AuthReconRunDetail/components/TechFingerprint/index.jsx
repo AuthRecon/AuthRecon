@@ -127,7 +127,7 @@ function TechFingerprint({ techFingerprint, jsFrameworks }) {
             <div className="space-y-1 max-h-60 overflow-y-auto scrollbar-thin">
               {Object.entries(fp.headers).map(([key, value]) => (
                 <div key={key} className="flex items-start gap-2 text-xs">
-                  <span className="text-[var(--accent-blue)] font-mono font-medium min-w-[140px]">{key}:</span>
+                  <span className="text-(--accent-blue) font-mono font-medium min-w-[140px]">{key}:</span>
                   <span className="text-slate-400 font-mono flex-1 break-all">{value}</span>
                 </div>
               ))}

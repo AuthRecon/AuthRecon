@@ -56,7 +56,7 @@ function AuditLogPanel() {
             <select
               value={eventFilter}
               onChange={e => setEventFilter(e.target.value)}
-              className="bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-sky-500"
+              className="bg-slate-800 border border-slate-700 text-slate-300 text-sm rounded-lg px-3 py-1.5 focus:outline-hidden focus:border-sky-500"
             >
               <option value="">All events</option>
               {ALL_EVENTS.map(e => (
@@ -117,7 +117,7 @@ function AuditLogPanel() {
                       <td className="py-2.5 pr-4 text-slate-500 whitespace-nowrap text-xs font-mono">
                         {formatDate(entry.created_at)}
                       </td>
-                      <td className="py-2.5 pr-4 min-w-[10rem]">
+                      <td className="py-2.5 pr-4 min-w-40">
                         <span className={`font-medium ${meta.color}`}>{meta.label}</span>
                       </td>
                       <td className="py-2.5 pr-4 text-slate-300 max-w-[180px] truncate">

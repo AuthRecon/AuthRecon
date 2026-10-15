@@ -45,7 +45,7 @@ function GlassTerminal({
               type="checkbox"
               checked={autoScroll}
               onChange={(e) => setAutoScroll(e.target.checked)}
-              className="rounded bg-slate-900 text-sky-500 focus:ring-sky-500 focus:ring-offset-slate-900"
+              className="rounded-sm bg-slate-900 text-sky-500 focus:ring-sky-500 focus:ring-offset-slate-900"
             />
             Follow output
           </label>

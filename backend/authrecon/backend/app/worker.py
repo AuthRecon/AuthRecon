@@ -41,6 +41,7 @@ from app.services.automation import (
     CredentialRejected,
 )
 from app.services.side_files import build_side_file
+from app.services.verify_pattern import choose_verify_pattern
 from app.services.automation.navigation import drain_notes as drain_navigation_notes
 from app.services.live_timeline import current as live_timeline_current, event_prefix, live_timeline, not_yet_written
 from app.services.vnc_session import live_view
@@ -48,7 +49,7 @@ from app.services.storage import get_artifact_storage
 from app.services.artifact_crypto import read_artifact_bytes, register_model_hooks, write_key_for_run
 from app.services.profiles import get_profile_artifact_cipher
 from app.services.artifact_crypto import encrypt_run_cookies
-from app.core.urls import strip_userinfo
+from app.core.urls import stable_page_url, strip_userinfo
 from app.services.tech_fingerprint import analyze_tech_fingerprint
 from app.services.flow_summarizer import generate_flow_summary
 from app.services.exports.burp import export_to_burp_http
@@ -291,7 +292,7 @@ def _build_side_from_recorded_actions(
         }],
         "plugins": [{
             "id": "login", "enabled": True,
-            "config": {"loginUrl": target_url, "pageToVerify": final_url or target_url},
+            "config": {"loginUrl": target_url, "pageToVerify": stable_page_url(final_url) or target_url},
         }],
         "urls": [target_url],
         "pluginsVersion": {},
@@ -1204,7 +1205,7 @@ def _run_basic_variant(
 
         result.success = True
         result.final_url = final_url
-        result.pattern = automation.page_title or "Authenticated page"
+        result.pattern = automation.page_title
         result.llm_pattern = None
         result.session_cookies = _normalize_cookies_payload(automation.cookies)
         # Preserve js_secrets if already set, then merge automation.security_context
@@ -1308,7 +1309,7 @@ def _run_azure_variant(
 
         result.success = True
         result.final_url = automation.final_url or run.target_url
-        result.pattern = automation.pattern or "Authenticated page"
+        result.pattern = automation.pattern
         result.llm_pattern = None
         result.session_cookies = _normalize_cookies_payload(automation.cookies)
         # Preserve js_secrets if already set, then merge automation.security_context
@@ -1455,7 +1456,7 @@ def _run_saml_variant(
 
         result.success = True
         result.final_url = automation.final_url or run.target_url
-        result.pattern = automation.pattern or "Authenticated page"
+        result.pattern = automation.pattern
         result.llm_pattern = None
         result.session_cookies = _normalize_cookies_payload(automation.cookies)
         # Preserve js_secrets if already set, then merge automation.security_context
@@ -1836,7 +1837,7 @@ def _run_okta_variant(
 
         result.success = True
         result.final_url = automation.final_url or run.target_url
-        result.pattern = automation.heading or automation.success_message or automation.page_title or "Authenticated"
+        result.pattern = automation.heading or automation.success_message or automation.page_title
         result.llm_pattern = None
         result.session_cookies = _normalize_cookies_payload(automation.cookies)
         # Preserve js_secrets if already set, then merge automation.security_context
@@ -2622,7 +2623,7 @@ def _run_form_variant(
 
         result.success = True
         result.final_url = automation.final_url or run.target_url
-        result.pattern = automation.pattern or "Authenticated page"
+        result.pattern = automation.pattern
         if used_ai_selectors:
             # Surfaced in the UI via DetectionEvidence.jsx's "Pattern Analysis
             # (LLM)" card — this field already existed in the schema/frontend
@@ -2836,7 +2837,7 @@ def _run_two_step_variant(
         result.success = True
         result.completed_at = finish
         result.final_url = automation.final_url
-        result.pattern = automation.pattern or "Two-step authentication successful"
+        result.pattern = automation.pattern
         result.session_cookies = _normalize_cookies_payload(automation.cookies)
         # Preserve js_secrets if already set, then merge automation.security_context
         js_secrets_backup = result.security_context.get("js_secrets") if isinstance(result.security_context, dict) else None
@@ -2954,7 +2955,7 @@ def _run_two_step_variant(
         # If we got here, automation succeeded (AutomationFailure would have been caught above)
         result.success = True
         result.final_url = automation.final_url or run.target_url
-        result.pattern = automation.pattern or "Two-step authentication successful"
+        result.pattern = automation.pattern
         result.session_cookies = _normalize_cookies_payload(automation.cookies)
         # Preserve js_secrets if already set, then merge automation.security_context
         js_secrets_backup = result.security_context.get("js_secrets") if isinstance(result.security_context, dict) else None
@@ -3350,7 +3351,11 @@ def process_run(run_id: str) -> None:
             run.finished_at = datetime.now(timezone.utc)
             if first_success:
                 run.final_url = strip_userinfo(first_success.final_url) or run.target_url
-                run.pattern = first_success.pattern or "Authenticated page"
+                # Text on the post-login page and not on the login page, or None
+                # (the WAS card then asks the operator); never a placeholder.
+                run.pattern = choose_verify_pattern(
+                    [first_success.pattern], first_success.post_auth_html, first_success.pre_auth_html
+                )
                 run.llm_pattern = first_success.llm_pattern
                 if normalized_cookies:
                     run.session_cookies_enc = encrypt_run_cookies(db, run, normalized_cookies)
@@ -3971,7 +3976,7 @@ def process_manual_session(run_id: str, target_url: str):
                                 page_title = title_element.get_text(strip=True)
 
                         # Store verification pattern (first non-empty)
-                        run.pattern = success_message or heading or page_title
+                        run.pattern = choose_verify_pattern([success_message, heading, page_title], final_page_html, None)
                         if run.pattern:
                             logger.info(f"[Manual Recording {run_id}] Detected verification pattern: {run.pattern[:50]}...")
 

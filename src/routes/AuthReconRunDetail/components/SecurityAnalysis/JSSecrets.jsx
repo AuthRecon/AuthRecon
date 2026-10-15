@@ -47,31 +47,31 @@ function JSSecrets({ jsSecretsData }) {
         {totalFiles > 0 && (
           <div className="border-t border-slate-700/30 pt-4 mt-4 space-y-3">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <div className="text-center p-3 bg-slate-800/30 rounded">
+              <div className="text-center p-3 bg-slate-800/30 rounded-sm">
                 <div className="text-2xl font-bold text-emerald-400">{formatNumber(totalLines)}</div>
                 <div className="text-xs text-slate-400 mt-1">Lines Scanned</div>
               </div>
-              <div className="text-center p-3 bg-slate-800/30 rounded">
+              <div className="text-center p-3 bg-slate-800/30 rounded-sm">
                 <div className="text-2xl font-bold text-emerald-400">{totalFiles}</div>
                 <div className="text-xs text-slate-400 mt-1">Files Analyzed</div>
               </div>
-              <div className="text-center p-3 bg-slate-800/30 rounded">
+              <div className="text-center p-3 bg-slate-800/30 rounded-sm">
                 <div className="text-2xl font-bold text-emerald-400">{jsSecretsAnalysis.security_score.toFixed(1)}</div>
                 <div className="text-xs text-slate-400 mt-1">Security Score</div>
               </div>
             </div>
 
             {largestFiles.length > 0 && (
-              <details className="group mt-4">
+              <details className="group">
                 <summary className="cursor-pointer text-sm text-slate-400 hover:text-slate-200 transition-colors list-none flex items-center gap-2">
                   <ChevronDown className="w-4 h-4 group-open:rotate-180 transition-transform" />
                   <span>Show Scanned Files ({largestFiles.length})</span>
                 </summary>
                 <div className="mt-3 space-y-2">
                   {largestFiles.map((file, idx) => (
-                    <div key={idx} className="flex items-center justify-between text-xs bg-slate-800/20 rounded p-2">
+                    <div key={idx} className="flex items-center justify-between text-xs bg-slate-800/20 rounded-sm p-2">
                       <span className="text-slate-300 font-mono truncate flex-1 pr-4">{file.name}</span>
-                      <div className="flex items-center gap-3 text-slate-400 flex-shrink-0">
+                      <div className="flex items-center gap-3 text-slate-400 shrink-0">
                         <span>{formatNumber(file.lines)} lines</span>
                         <span className="text-slate-600">•</span>
                         <span>{formatBytes(file.size_bytes)}</span>
@@ -261,7 +261,7 @@ function JSSecrets({ jsSecretsData }) {
                   </p>
                   <p className="text-sm text-slate-300">{finding.impact}</p>
                 </div>
-                <button className="flex-shrink-0 text-slate-400 hover:text-slate-200 transition-colors">
+                <button className="shrink-0 text-slate-400 hover:text-slate-200 transition-colors">
                   {isExpanded ? (
                     <ChevronUp className="w-5 h-5" />
                   ) : (
@@ -279,7 +279,7 @@ function JSSecrets({ jsSecretsData }) {
                       <FileCode className="w-3 h-3" />
                       <span className="font-medium">Source Code Context</span>
                     </div>
-                    <div className="bg-slate-950/50 rounded border border-slate-800 p-3 overflow-x-auto">
+                    <div className="bg-slate-950/50 rounded-sm border border-slate-800 p-3 overflow-x-auto">
                       <pre className="text-xs text-slate-300 font-mono whitespace-pre">
                         {finding.snippet}
                       </pre>
@@ -292,7 +292,7 @@ function JSSecrets({ jsSecretsData }) {
                       <ChevronDown className="w-3 h-3 group-open:rotate-180 transition-transform" />
                       <span>Show Matched Value</span>
                     </summary>
-                    <div className="mt-2 bg-slate-950/50 rounded border border-slate-800 p-3">
+                    <div className="mt-2 bg-slate-950/50 rounded-sm border border-slate-800 p-3">
                       <div className="text-xs text-slate-400 mb-1">Matched Pattern:</div>
                       <code className="text-xs text-rose-300 font-mono break-all">
                         {finding.matched_value}
@@ -306,7 +306,7 @@ function JSSecrets({ jsSecretsData }) {
                       <ChevronDown className="w-3 h-3 group-open:rotate-180 transition-transform" />
                       <span>Show Full URL</span>
                     </summary>
-                    <div className="mt-2 bg-slate-950/50 rounded border border-slate-800 p-3">
+                    <div className="mt-2 bg-slate-950/50 rounded-sm border border-slate-800 p-3">
                       <code className="text-xs text-slate-300 font-mono break-all">
                         {finding.url}
                       </code>

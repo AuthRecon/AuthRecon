@@ -33,7 +33,7 @@ const Input = forwardRef(({
           className={`
             input-field w-full px-4 py-2.5
             placeholder:text-slate-500
-            focus:outline-none
+            focus:outline-hidden
             disabled:opacity-50 disabled:cursor-not-allowed
             ${Icon ? 'pl-11' : ''}
             ${className}

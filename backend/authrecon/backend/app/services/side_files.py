@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from typing import Iterable
 from urllib.parse import urlparse, urljoin
 
+from app.core.urls import stable_page_url
 from app.services.automation import FormAuthResult
 
 
@@ -115,7 +116,7 @@ def build_side_file(
                 "enabled": True,
                 "config": {
                     "loginUrl": login_url,
-                    "pageToVerify": final_url,
+                    "pageToVerify": stable_page_url(final_url),
                 },
             }
         ],
@@ -246,7 +247,7 @@ def build_two_step_side_file(
                 "enabled": True,
                 "config": {
                     "loginUrl": login_url,
-                    "pageToVerify": verify_url or login_url,
+                    "pageToVerify": stable_page_url(verify_url) or login_url,
                     "loginType": "two_step_form",
                 },
             }

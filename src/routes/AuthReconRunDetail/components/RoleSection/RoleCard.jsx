@@ -57,7 +57,7 @@ function RoleCard({ runId, role }) {
   }
 
   return (
-    <Card padding="md" className="hover:border-[var(--stroke-blue)] transition-colors">
+    <Card padding="md" className="hover:border-(--stroke-blue) transition-colors">
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1 min-w-0">
@@ -96,7 +96,7 @@ function RoleCard({ runId, role }) {
       {/* Expand/Collapse Button */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full py-2 px-3 rounded-lg bg-[var(--bg-1)] border border-[var(--stroke-dark)] hover:border-[var(--stroke-blue)] text-sm text-[var(--text-secondary)] hover:text-white transition-colors flex items-center justify-center gap-2 mb-3"
+        className="w-full py-2 px-3 rounded-lg bg-(--bg-1) border border-(--stroke-dark) hover:border-(--stroke-blue) text-sm text-(--text-secondary) hover:text-white transition-colors flex items-center justify-center gap-2 mb-3"
       >
         {expanded ? 'Collapse' : 'Expand Details'}
         <svg

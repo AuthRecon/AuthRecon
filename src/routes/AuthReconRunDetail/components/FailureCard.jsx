@@ -11,7 +11,7 @@ function FailureCard({ failure, errorMessage }) {
   return (
     <Card padding="lg" className="border-rose-900/50 bg-rose-950/20">
       <div className="flex items-start gap-3">
-        <AlertOctagon className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
+        <AlertOctagon className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0 space-y-3">
           <h3 className="text-lg font-semibold text-rose-300">{failure?.title || 'The run failed.'}</h3>
           {failure?.next_steps?.length > 0 && (
@@ -28,7 +28,7 @@ function FailureCard({ failure, errorMessage }) {
                 {showRaw ? 'Hide' : 'Show'} error details
               </button>
               {showRaw && (
-                <p className="mt-2 text-sm text-rose-300/90 font-mono whitespace-pre-wrap break-words">{raw}</p>
+                <p className="mt-2 text-sm text-rose-300/90 font-mono whitespace-pre-wrap wrap-break-word">{raw}</p>
               )}
             </div>
           )}

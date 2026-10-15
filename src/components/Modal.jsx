@@ -38,7 +38,7 @@ function Modal({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" />
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-xs" />
         </Transition.Child>
 
         {/* Modal Container */}

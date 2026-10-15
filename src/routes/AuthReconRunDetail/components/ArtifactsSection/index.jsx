@@ -147,15 +147,15 @@ function ArtifactsSection({ runId, artifacts, runStatus }) {
       </div>
 
       {/* Tabs */}
-      <div className="flex flex-wrap gap-2 mb-4 border-b border-[var(--stroke-dark)] pb-3">
+      <div className="flex flex-wrap gap-2 mb-4 border-b border-(--stroke-dark) pb-3">
         {tabs.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors border ${
               activeTab === tab.id
-                ? 'bg-[var(--sidebar-active-bg)] text-[var(--accent-blue)] border-[var(--stroke-blue)]'
-                : 'bg-[var(--bg-1)] text-[var(--text-secondary)] border-[var(--stroke-dark)] hover:border-[var(--stroke-blue)]'
+                ? 'bg-(--sidebar-active-bg) text-(--accent-blue) border-(--stroke-blue)'
+                : 'bg-(--bg-1) text-(--text-secondary) border-(--stroke-dark) hover:border-(--stroke-blue)'
             }`}
           >
             {tab.label} {tab.count > 0 && `(${tab.count})`}
@@ -169,7 +169,7 @@ function ArtifactsSection({ runId, artifacts, runStatus }) {
           filteredArtifacts.map(artifact => (
             <div
               key={artifact.id}
-              className="p-3 rounded-lg border border-[var(--stroke-dark)] bg-[var(--bg-2)] hover:border-[var(--stroke-blue)] transition-colors"
+              className="p-3 rounded-lg border border-(--stroke-dark) bg-(--bg-2) hover:border-(--stroke-blue) transition-colors"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">

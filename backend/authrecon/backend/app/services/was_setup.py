@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from app.core.urls import strip_userinfo
+from app.core.urls import stable_page_url, strip_userinfo
 
 # Auth types a .side (Selenium) script can drive.
 _SELENIUM_TYPES = {"form_based", "two_step_form", "azure_ad", "okta", "ldap", "saml", "oauth", "manual_recording"}
@@ -86,6 +86,14 @@ def build_was_setup(run) -> dict[str, Any] | None:
     notes = []
     if method == "http_auth":
         notes.append(_HTTP_CHALLENGE[auth_type][1])
+    if method == "selenium" and not pattern_regex(run.pattern):
+        notes.append("No reliable success text was found (nothing on the post-login page that is absent from "
+                     "the login page). Before scanning, pick text that only appears when logged in, such as "
+                     "your username or a 'Log out' link, from the post-login screenshot.")
+    if stable_page_url(run.final_url) != strip_userinfo(run.final_url):
+        notes.append("The login landed on a URL with one-time sign-in parameters (such as an OAuth code); "
+                     "they were removed from the page to verify. If that page shows an error without them, "
+                     "use the application's home page instead.")
     if method == "selenium":
         notes.append("Upload the .side file as the scan's Selenium authentication script.")
         notes.append("The .side file contains the login credentials in plain text (the scanner needs them): "
@@ -94,9 +102,10 @@ def build_was_setup(run) -> dict[str, Any] | None:
         "method": method,
         "method_label": label,
         "login_url": strip_userinfo(run.target_url),
-        "page_to_verify": strip_userinfo(run.final_url),
+        "page_to_verify": stable_page_url(run.final_url),
         "pattern_to_verify": run.pattern,
         "pattern_regex": pattern_regex(run.pattern),
+        "pattern_missing": method == "selenium" and not pattern_regex(run.pattern),
         "scripts": scripts,
         "notes": notes,
     }

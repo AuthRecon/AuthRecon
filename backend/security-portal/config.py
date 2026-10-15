@@ -9,7 +9,7 @@ from typing import List
 from dotenv import load_dotenv
 
 # Release version; must match the repo-root VERSION file (backend/authrecon/backend/tests/test_version.py).
-APP_VERSION = "0.10.0"
+APP_VERSION = "0.10.1"
 
 
 

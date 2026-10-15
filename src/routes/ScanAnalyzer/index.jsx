@@ -68,7 +68,7 @@ function ScanAnalyzer() {
               ) : (
                 <p className="text-slate-300">
                   This feature works through a connected AI client (MCP). Uploads are stored now, but analysis needs an
-                  AI client: <Link to="/settings?tab=ai" className="text-[var(--accent-blue)] hover:underline">Settings › AI &amp; MCP</Link>.
+                  AI client: <Link to="/settings?tab=ai" className="text-(--accent-blue) hover:underline">Settings › AI &amp; MCP</Link>.
                 </p>
               )}
               <p className="text-xs text-slate-500 mt-1">
@@ -102,7 +102,7 @@ function ScanAnalyzer() {
             <ul className="divide-y divide-slate-800">
               {exports.map((e) => (
                 <li key={e.id} className="py-3 flex items-center gap-4">
-                  <FileArchive className="w-5 h-5 text-slate-400 flex-shrink-0" />
+                  <FileArchive className="w-5 h-5 text-slate-400 shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-slate-100 truncate">{e.filename}</p>
                     <p className="text-xs text-slate-500">

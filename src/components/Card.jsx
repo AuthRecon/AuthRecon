@@ -16,7 +16,7 @@ function Card({
     default: 'card',
     solid: 'bg-slate-800 border border-slate-700 rounded-3xl',
     outline: 'border-2 border-slate-700 rounded-3xl bg-transparent',
-    gradient: 'bg-[var(--grad-card)] border border-[var(--stroke-dark)] rounded-[var(--radius-hard)] shadow-[var(--shadow-card)]',
+    gradient: 'bg-(--grad-card) border border-(--stroke-dark) rounded-(--radius-hard) shadow-(--shadow-card)',
   }
 
   const paddings = {

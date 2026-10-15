@@ -16,14 +16,14 @@ function Button({
   className = '',
   ...props
 }) {
-  const baseStyles = 'inline-flex items-center justify-center font-medium font-mono transition-all duration-150 rounded focus:outline-none focus:ring-1 focus:ring-[var(--accent-blue)] focus:ring-offset-1 focus:ring-offset-[var(--bg-0)] disabled:opacity-40 disabled:cursor-not-allowed'
+  const baseStyles = 'inline-flex items-center justify-center font-medium font-mono transition-all duration-150 rounded-sm focus:outline-hidden focus:ring-1 focus:ring-(--accent-blue) focus:ring-offset-1 focus:ring-offset-(--bg-0) disabled:opacity-40 disabled:cursor-not-allowed'
 
   const variants = {
     primary: 'button-primary',
     secondary: 'button-neutral',
     danger: 'bg-rose-500 hover:bg-rose-600 text-white shadow-lg hover:shadow-rose-500/50 focus:ring-rose-500',
-    ghost: 'bg-transparent hover:bg-white/5 text-[var(--text-secondary)] hover:text-white focus:ring-white/20',
-    outline: 'border border-[var(--stroke-blue)] hover:border-[var(--accent-blue)] text-[var(--accent-blue)] focus:ring-[var(--accent-blue-soft)]',
+    ghost: 'bg-transparent hover:bg-white/5 text-(--text-secondary) hover:text-white focus:ring-white/20',
+    outline: 'border border-(--stroke-blue) hover:border-(--accent-blue) text-(--accent-blue) focus:ring-(--accent-blue-soft)',
   }
 
   const sizes = {

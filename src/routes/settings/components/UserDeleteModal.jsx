@@ -29,14 +29,14 @@ function UserDeleteModal({ user, onClose }) {
   // Should never happen due to UI protection, but just in case
   if (isCurrentUser) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs">
         <div className="bg-slate-900 border border-slate-800/80 rounded-2xl shadow-2xl w-full max-w-md mx-4">
           <div className="px-6 py-4 border-b border-slate-800/80">
             <h2 className="text-xl font-semibold text-slate-50">Cannot Delete User</h2>
           </div>
           <div className="p-6">
             <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm flex items-start gap-2 mb-6">
-              <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
               <span>You cannot delete your own account.</span>
             </div>
             <Button variant="secondary" onClick={onClose} className="w-full">
@@ -49,7 +49,7 @@ function UserDeleteModal({ user, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs">
       <div className="bg-slate-900 border border-slate-800/80 rounded-2xl shadow-2xl w-full max-w-md mx-4">
         <div className="px-6 py-4 border-b border-slate-800/80 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -68,7 +68,7 @@ function UserDeleteModal({ user, onClose }) {
 
         <div className="p-6 space-y-4">
           <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm flex items-start gap-2">
-            <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
             <div>
               <p className="font-medium mb-1">This action cannot be undone</p>
               <p className="text-red-400/80">
@@ -91,7 +91,7 @@ function UserDeleteModal({ user, onClose }) {
             {user.is_admin && (
               <div className="flex items-center justify-between text-sm">
                 <span className="text-slate-400">Role:</span>
-                <span className="inline-flex items-center gap-1 text-[var(--accent-blue)]">
+                <span className="inline-flex items-center gap-1 text-(--accent-blue)">
                   <Shield className="w-3 h-3" />
                   Administrator
                 </span>
@@ -108,7 +108,7 @@ function UserDeleteModal({ user, onClose }) {
               value={confirmEmail}
               onChange={(e) => setConfirmEmail(e.target.value)}
               placeholder={user.username}
-              className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-slate-50 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500/30 transition-all"
+              className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-slate-50 placeholder-slate-500 focus:outline-hidden focus:ring-2 focus:ring-red-500/20 focus:border-red-500/30 transition-all"
               autoFocus
             />
             {confirmEmail && !canDelete && (
@@ -125,7 +125,7 @@ function UserDeleteModal({ user, onClose }) {
 
           {error && (
             <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm flex items-start gap-2">
-              <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
               <span>{error}</span>
             </div>
           )}

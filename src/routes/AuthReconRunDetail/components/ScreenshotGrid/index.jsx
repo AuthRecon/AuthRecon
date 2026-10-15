@@ -111,10 +111,10 @@ function ScreenshotGrid({ screenshots }) {
             <div
               key={screenshot.id}
               onClick={() => openLightbox(idx)}
-              className="group relative bg-[var(--bg-2)] rounded-lg overflow-hidden border border-[var(--stroke-dark)] hover:border-[var(--stroke-blue)] cursor-pointer transition-all"
+              className="group relative bg-(--bg-2) rounded-lg overflow-hidden border border-(--stroke-dark) hover:border-(--stroke-blue) cursor-pointer transition-all"
             >
               {/* Larger aspect ratio for better viewing */}
-              <div className="aspect-[4/3] relative">
+              <div className="aspect-4/3 relative">
                 {imageUrls[screenshot.id] ? (
                   <img
                     src={imageUrls[screenshot.id]}
@@ -123,19 +123,19 @@ function ScreenshotGrid({ screenshots }) {
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-slate-800/50">
-                    <div className="w-8 h-8 border-4 border-[rgba(41,199,255,0.3)] border-t-[var(--accent-blue)] rounded-full animate-spin" />
+                    <div className="w-8 h-8 border-4 border-[rgba(41,199,255,0.3)] border-t-(--accent-blue) rounded-full animate-spin" />
                   </div>
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="absolute inset-0 bg-linear-to-t from-slate-900 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
 
               {/* Always visible caption */}
-              <div className="p-3 border-t border-[var(--stroke-dark)] bg-[var(--bg-1)]">
+              <div className="p-3 border-t border-(--stroke-dark) bg-(--bg-1)">
                 <p className="text-sm font-medium text-slate-300 mb-1 truncate">
                   {screenshot.description || screenshot.name}
                 </p>
                 {extractUrlFromDescription(screenshot.description) && (
-                  <p className="text-xs text-[var(--accent-blue)] mb-1 truncate font-mono">
+                  <p className="text-xs text-(--accent-blue) mb-1 truncate font-mono">
                     {extractUrlFromDescription(screenshot.description)}
                   </p>
                 )}
@@ -146,7 +146,7 @@ function ScreenshotGrid({ screenshots }) {
 
               {/* Hover overlay with "View" */}
               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <div className="bg-[var(--accent-blue)]/90 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                <div className="bg-(--accent-blue)/90 text-white px-4 py-2 rounded-lg text-sm font-medium">
                   Click to view full size
                 </div>
               </div>
@@ -158,13 +158,13 @@ function ScreenshotGrid({ screenshots }) {
       {/* Enhanced Lightbox Modal */}
       {lightboxOpen && currentShot && (
         <div
-          className="fixed inset-0 z-[9999] bg-black/95"
+          className="fixed inset-0 z-9999 bg-black/95"
           onClick={closeLightbox}
         >
           {/* Close Button - Top Right */}
           <button
             onClick={closeLightbox}
-            className="absolute top-4 right-4 z-[10000] w-12 h-12 flex items-center justify-center rounded-lg bg-black/70 hover:bg-black/50 text-slate-300 hover:text-white transition-colors border border-[var(--stroke-blue)]"
+            className="absolute top-4 right-4 z-10000 w-12 h-12 flex items-center justify-center rounded-lg bg-black/70 hover:bg-black/50 text-slate-300 hover:text-white transition-colors border border-(--stroke-blue)"
             title="Close (ESC)"
           >
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -173,14 +173,14 @@ function ScreenshotGrid({ screenshots }) {
           </button>
 
           {/* Info Bar - Top */}
-          <div className="absolute top-4 left-4 right-20 z-[10000] bg-[var(--bg-1)] border border-[var(--stroke-blue)] rounded-lg px-6 py-4 shadow-[var(--shadow-card-strong)] max-h-32 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="absolute top-4 left-4 right-20 z-10000 bg-(--bg-1) border border-(--stroke-blue) rounded-lg px-6 py-4 shadow-(--shadow-card-strong) max-h-32 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-sm font-semibold text-white mb-2 line-clamp-2">
               {currentShot.description || currentShot.name}
             </h3>
             {extractUrlFromDescription(currentShot.description) && (
-              <div className="mb-3 p-2 bg-[var(--bg-2)] border border-[var(--stroke-blue)] rounded max-h-20 overflow-y-auto">
-                <p className="text-xs text-[var(--text-muted)] mb-1">Page URL:</p>
-                <p className="text-sm text-[var(--accent-blue)] font-mono break-all">
+              <div className="mb-3 p-2 bg-(--bg-2) border border-(--stroke-blue) rounded-sm max-h-20 overflow-y-auto">
+                <p className="text-xs text-(--text-muted) mb-1">Page URL:</p>
+                <p className="text-sm text-(--accent-blue) font-mono break-all">
                   {extractUrlFromDescription(currentShot.description)}
                 </p>
               </div>
@@ -211,7 +211,7 @@ function ScreenshotGrid({ screenshots }) {
               />
             ) : (
               <div className="flex flex-col items-center gap-4">
-                <div className="w-12 h-12 border-4 border-[rgba(41,199,255,0.3)] border-t-[var(--accent-blue)] rounded-full animate-spin" />
+                <div className="w-12 h-12 border-4 border-[rgba(41,199,255,0.3)] border-t-(--accent-blue) rounded-full animate-spin" />
                 <p className="text-slate-400">Loading image...</p>
               </div>
             )}
@@ -221,7 +221,7 @@ function ScreenshotGrid({ screenshots }) {
           {screenshots.length > 1 && (
             <button
               onClick={(e) => { e.stopPropagation(); goToPrevious(); }}
-              className="absolute left-8 top-1/2 -translate-y-1/2 z-[10000] w-14 h-14 flex items-center justify-center rounded-lg bg-[var(--bg-1)] border border-[var(--stroke-dark)] hover:border-[var(--stroke-blue)] text-slate-300 hover:text-white transition-colors backdrop-blur"
+              className="absolute left-8 top-1/2 -translate-y-1/2 z-10000 w-14 h-14 flex items-center justify-center rounded-lg bg-(--bg-1) border border-(--stroke-dark) hover:border-(--stroke-blue) text-slate-300 hover:text-white transition-colors backdrop-blur-sm"
               title="Previous (←)"
             >
               <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -234,7 +234,7 @@ function ScreenshotGrid({ screenshots }) {
           {screenshots.length > 1 && (
             <button
               onClick={(e) => { e.stopPropagation(); goToNext(); }}
-              className="absolute right-8 top-1/2 -translate-y-1/2 z-[10000] w-14 h-14 flex items-center justify-center rounded-lg bg-[var(--bg-1)] border border-[var(--stroke-dark)] hover:border-[var(--stroke-blue)] text-slate-300 hover:text-white transition-colors backdrop-blur"
+              className="absolute right-8 top-1/2 -translate-y-1/2 z-10000 w-14 h-14 flex items-center justify-center rounded-lg bg-(--bg-1) border border-(--stroke-dark) hover:border-(--stroke-blue) text-slate-300 hover:text-white transition-colors backdrop-blur-sm"
               title="Next (→)"
             >
               <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -244,7 +244,7 @@ function ScreenshotGrid({ screenshots }) {
           )}
 
           {/* Navigation hint - Bottom */}
-          <div className="absolute bottom-6 left-0 right-0 text-center z-[10000]" onClick={(e) => e.stopPropagation()}>
+          <div className="absolute bottom-6 left-0 right-0 text-center z-10000" onClick={(e) => e.stopPropagation()}>
             <p className="text-sm text-slate-400">
               Use ← → arrow keys to navigate • ESC or click background to close
             </p>

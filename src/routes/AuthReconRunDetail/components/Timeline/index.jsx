@@ -5,8 +5,8 @@ import { classifyTimeline } from '../../../../utils/timelineEvents'
 
 const chipClass = (active) => `px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
   active
-    ? 'bg-[var(--sidebar-active-bg)] text-[var(--accent-blue)] border-[var(--stroke-blue)]'
-    : 'bg-[var(--bg-1)] text-[var(--text-secondary)] border-[var(--stroke-dark)] hover:border-[var(--stroke-blue)]'
+    ? 'bg-(--sidebar-active-bg) text-(--accent-blue) border-(--stroke-blue)'
+    : 'bg-(--bg-1) text-(--text-secondary) border-(--stroke-dark) hover:border-(--stroke-blue)'
 }`
 
 function Timeline({ timeline, compact = false }) {

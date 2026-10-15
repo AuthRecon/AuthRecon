@@ -1,85 +1,134 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+@theme {
+  --color-portal-bg: #020617;
+  --color-portal-surface: #0f172a;
+  --color-portal-card: #1e293b;
+  --color-portal-border: #334155;
+
+  --color-primary: #29c7ff;
+  --color-primary-hover: #0ea5e9;
+  --color-primary-light: #7dd3fc;
+
+  --shadow-panel: 0 4px 16px rgba(0, 0, 0, 0.4);
+
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.4rem;
 }
 
-:root {
-  /* Original slate palette — restored */
-  --bg-0: #0f172a;   /* slate-900 — page background */
-  --bg-1: #1e293b;   /* slate-800 — surface / header */
-  --bg-2: #1e293b;   /* slate-800 — card (flat, no gradient) */
-  --bg-3: #293649;   /* between slate-800/700 — elevated cards */
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
 
-  /* Sidebar */
-  --sidebar-bg: #1a2332;
-  --sidebar-active-bg: rgba(0, 170, 255, 0.15);
-  --sidebar-hover-bg: rgba(0, 170, 255, 0.10);
-  --sidebar-border: rgba(0, 170, 255, 0.22);
-
-  /* Text — original cool blue-white */
-  --text-primary: #e9f3ff;
-  --text-secondary: #9db2c7;
-  --text-muted: #647890;
-
-  /* Original cyan accent */
-  --accent-blue: #29c7ff;
-  --accent-blue-strong: #19b6ff;
-  --accent-blue-soft: #5ddcff;
-
-  /* Header gradient — original (subtle, not garish) */
-  --grad-header: linear-gradient(135deg, #1e293b 0%, #2a3f54 50%, #1e293b 100%);
-  --grad-card: #1e293b;
-  --grad-button: linear-gradient(135deg, #1ab9ff 0%, #00a3e6 100%);
-
-  /* Shadows — reduced from original (cleaner) */
-  --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.4);
-  --shadow-card-strong: 0 8px 24px rgba(0, 0, 0, 0.5);
-  --shadow-glow: none;   /* removed: inset sidebar indicator replaces this */
-
-  /* Borders */
-  --stroke-dark: rgba(255, 255, 255, 0.05);
-  --stroke-blue: rgba(0, 170, 255, 0.25);
-
-  /* Border radius — tighter than original (cleaner) */
-  --radius-soft: 4px;
-  --radius-hard: 6px;
-
-  /* Status chips — original */
-  --chip-success-bg: rgba(0, 200, 145, 0.20);
-  --chip-success-text: #18d4a6;
-  --chip-fail-bg: rgba(255, 75, 90, 0.20);
-  --chip-fail-text: #ff5f73;
-  --chip-form-bg: rgba(180, 140, 255, 0.18);
-  --chip-form-text: #c9a4ff;
-
-  /* Buttons — original gradients */
-  --btn-primary-bg: linear-gradient(135deg, #1ab9ff 0%, #00a3e6 100%);
-  --btn-primary-text: #ffffff;
-  --btn-primary-hover: linear-gradient(135deg, #2ad0ff 0%, #13b5ff 100%);
-  --btn-primary-active: linear-gradient(135deg, #009fe0 0%, #008ec7 100%);
-  --btn-neutral-bg: #334155;
-  --btn-neutral-hover: #475569;
-  --btn-neutral-text: #e2e8f0;
-
-  /* Inputs */
-  --input-bg: #1e293b;
-  --input-border: rgba(255, 255, 255, 0.08);
-  --input-focus-border: var(--accent-blue-soft);
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
 }
 
-body {
-  background: var(--bg-0);
-  color: var(--text-primary);
-  font-family: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  font-size: 13px;
-  line-height: 1.6;
+/* Two more v3 defaults Tailwind v4 dropped: buttons had a pointer cursor and
+   placeholders were gray-400. */
+@layer base {
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-gray-400);
+  }
+}
+
+/* Global reset, palette and body: in @layer base so Tailwind utilities (which
+   v4 puts in a cascade layer) still override them, as they did in v3. */
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  :root {
+    /* Original slate palette — restored */
+    --bg-0: #0f172a;   /* slate-900 — page background */
+    --bg-1: #1e293b;   /* slate-800 — surface / header */
+    --bg-2: #1e293b;   /* slate-800 — card (flat, no gradient) */
+    --bg-3: #293649;   /* between slate-800/700 — elevated cards */
+
+    /* Sidebar */
+    --sidebar-bg: #1a2332;
+    --sidebar-active-bg: rgba(0, 170, 255, 0.15);
+    --sidebar-hover-bg: rgba(0, 170, 255, 0.10);
+    --sidebar-border: rgba(0, 170, 255, 0.22);
+
+    /* Text — original cool blue-white */
+    --text-primary: #e9f3ff;
+    --text-secondary: #9db2c7;
+    --text-muted: #647890;
+
+    /* Original cyan accent */
+    --accent-blue: #29c7ff;
+    --accent-blue-strong: #19b6ff;
+    --accent-blue-soft: #5ddcff;
+
+    /* Header gradient — original (subtle, not garish) */
+    --grad-header: linear-gradient(135deg, #1e293b 0%, #2a3f54 50%, #1e293b 100%);
+    --grad-card: #1e293b;
+    --grad-button: linear-gradient(135deg, #1ab9ff 0%, #00a3e6 100%);
+
+    /* Shadows — reduced from original (cleaner) */
+    --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.4);
+    --shadow-card-strong: 0 8px 24px rgba(0, 0, 0, 0.5);
+    --shadow-glow: none;   /* removed: inset sidebar indicator replaces this */
+
+    /* Borders */
+    --stroke-dark: rgba(255, 255, 255, 0.05);
+    --stroke-blue: rgba(0, 170, 255, 0.25);
+
+    /* Border radius — tighter than original (cleaner) */
+    --radius-soft: 4px;
+    --radius-hard: 6px;
+
+    /* Status chips — original */
+    --chip-success-bg: rgba(0, 200, 145, 0.20);
+    --chip-success-text: #18d4a6;
+    --chip-fail-bg: rgba(255, 75, 90, 0.20);
+    --chip-fail-text: #ff5f73;
+    --chip-form-bg: rgba(180, 140, 255, 0.18);
+    --chip-form-text: #c9a4ff;
+
+    /* Buttons — original gradients */
+    --btn-primary-bg: linear-gradient(135deg, #1ab9ff 0%, #00a3e6 100%);
+    --btn-primary-text: #ffffff;
+    --btn-primary-hover: linear-gradient(135deg, #2ad0ff 0%, #13b5ff 100%);
+    --btn-primary-active: linear-gradient(135deg, #009fe0 0%, #008ec7 100%);
+    --btn-neutral-bg: #334155;
+    --btn-neutral-hover: #475569;
+    --btn-neutral-text: #e2e8f0;
+
+    /* Inputs */
+    --input-bg: #1e293b;
+    --input-border: rgba(255, 255, 255, 0.08);
+    --input-focus-border: var(--accent-blue-soft);
+  }
+
+  body {
+    background: var(--bg-0);
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-size: 13px;
+    line-height: 1.6;
+  }
 }
 
 @layer components {
@@ -369,7 +418,7 @@ body {
 
 @layer utilities {
   .gradient-text {
-    @apply bg-gradient-to-r from-sky-400 to-blue-500 bg-clip-text text-transparent;
+    @apply bg-linear-to-r from-sky-400 to-blue-500 bg-clip-text text-transparent;
   }
 
   .scrollbar-thin {

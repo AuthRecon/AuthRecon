@@ -245,7 +245,7 @@ function RequestResponseView({ entry, activeTab, setActiveTab }) {
         {activeTab === 'response' && (
           <div>
             <h4 className="text-xs uppercase text-slate-500 mb-2">Response Body</h4>
-            <pre className="bg-slate-900/60 p-3 rounded text-xs text-slate-300 overflow-x-auto">
+            <pre className="bg-slate-900/60 p-3 rounded-sm text-xs text-slate-300 overflow-x-auto">
               {response.content?.text || '(empty response)'}
             </pre>
           </div>

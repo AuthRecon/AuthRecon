@@ -6,6 +6,7 @@ import Button from '../components/Button'
 import Input from '../components/Input'
 import Card from '../components/Card'
 import api from '../services/api'
+import VERSION from '../config/version'
 
 /**
  * Login Page
@@ -43,7 +44,7 @@ function Login() {
   // Show loading while checking setup status
   if (checkingSetup) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+      <div className="min-h-screen flex items-center justify-center p-4 bg-linear-to-br from-slate-950 via-slate-900 to-slate-950">
         <Card className="w-full max-w-md" padding="lg">
           <div className="text-center">
             <Shield className="w-12 h-12 text-blue-500 mx-auto mb-4 animate-pulse" />
@@ -95,7 +96,7 @@ function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-linear-to-br from-slate-950 via-slate-900 to-slate-950">
       <Card className="w-full max-w-md" padding="lg">
         {/* Logo */}
         <div className="text-center mb-8">
@@ -111,7 +112,7 @@ function Login() {
         {/* Error Alert */}
         {authError && (
           <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/30 rounded-xl flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
+            <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
             <div className="flex-1">
               <p className="text-sm font-medium text-rose-400">Login Failed</p>
               <p className="text-sm text-rose-300/80 mt-1">{authError}</p>
@@ -153,7 +154,7 @@ function Login() {
             variant="primary"
             size="lg"
             loading={isLoading}
-            className="w-full mt-6"
+            className="w-full"
           >
             {isLoading ? 'Signing in...' : 'Sign In'}
           </Button>
@@ -162,7 +163,7 @@ function Login() {
         {/* Footer */}
         <div className="mt-6 pt-6 border-t border-slate-700/50 text-center">
           <p className="text-xs text-slate-500">
-            AuthRecon Suite v2.0.0
+            AuthRecon Suite v{VERSION.toString()}
           </p>
         </div>
       </Card>

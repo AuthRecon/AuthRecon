@@ -12,7 +12,7 @@ function ReadOnlyField({ label, children }) {
   return (
     <div>
       <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">{label}</p>
-      <div className="px-3 py-2 rounded-lg bg-[var(--bg-1)] border border-[var(--stroke-dark)] text-sm text-slate-200">
+      <div className="px-3 py-2 rounded-lg bg-(--bg-1) border border-(--stroke-dark) text-sm text-slate-200">
         {children}
       </div>
     </div>

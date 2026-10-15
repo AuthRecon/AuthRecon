@@ -116,7 +116,7 @@ function UserEditModal({ user, onClose }) {
   const passwordStrength = formData.changePassword ? getPasswordStrength(formData.password) : null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs">
       <div className="bg-slate-900 border border-slate-800/80 rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-slate-900 border-b border-slate-800/80 px-6 py-4 flex items-center justify-between">
           <div>
@@ -134,14 +134,14 @@ function UserEditModal({ user, onClose }) {
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
           {errors.submit && (
             <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm flex items-start gap-2">
-              <XCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <XCircle className="w-4 h-4 mt-0.5 shrink-0" />
               <span>{errors.submit}</span>
             </div>
           )}
 
           {isCurrentUser && (
             <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-400 text-sm flex items-start gap-2">
-              <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
               <span>You are editing your own account. Some restrictions apply.</span>
             </div>
           )}
@@ -155,7 +155,7 @@ function UserEditModal({ user, onClose }) {
               type="text"
               value={formData.full_name}
               onChange={(e) => handleChange('full_name', e.target.value)}
-              className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-slate-50 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[rgba(41,199,255,0.2)] focus:border-[rgba(41,199,255,0.3)] transition-all"
+              className="w-full px-4 py-2.5 bg-slate-800/50 border border-slate-700/50 rounded-xl text-slate-50 placeholder-slate-500 focus:outline-hidden focus:ring-2 focus:ring-[rgba(41,199,255,0.2)] focus:border-[rgba(41,199,255,0.3)] transition-all"
               placeholder="John Doe"
             />
           </div>
@@ -169,11 +169,11 @@ function UserEditModal({ user, onClose }) {
                   onChange={(e) => handleChange('changePassword', e.target.checked)}
                   className="peer sr-only"
                 />
-                <div className="w-5 h-5 border-2 border-slate-700 rounded bg-slate-800/50 peer-checked:bg-[rgba(41,199,255,0.1)] peer-checked:border-[rgba(41,199,255,0.5)] transition-all" />
-                <CheckCircle2 className="absolute inset-0 w-5 h-5 text-[var(--accent-blue)] opacity-0 peer-checked:opacity-100 transition-opacity" />
+                <div className="w-5 h-5 border-2 border-slate-700 rounded-sm bg-slate-800/50 peer-checked:bg-[rgba(41,199,255,0.1)] peer-checked:border-[rgba(41,199,255,0.5)] transition-all" />
+                <CheckCircle2 className="absolute inset-0 w-5 h-5 text-(--accent-blue) opacity-0 peer-checked:opacity-100 transition-opacity" />
               </div>
               <div className="flex items-center gap-2">
-                <Lock className="w-4 h-4 text-slate-400 group-hover:text-[var(--accent-blue)] transition-colors" />
+                <Lock className="w-4 h-4 text-slate-400 group-hover:text-(--accent-blue) transition-colors" />
                 <span className="text-sm text-slate-300">Change password</span>
               </div>
             </label>
@@ -189,7 +189,7 @@ function UserEditModal({ user, onClose }) {
                       type={showPassword ? 'text' : 'password'}
                       value={formData.password}
                       onChange={(e) => handleChange('password', e.target.value)}
-                      className={`w-full px-4 py-2.5 pr-12 bg-slate-800/50 border rounded-xl text-slate-50 placeholder-slate-500 focus:outline-none focus:ring-2 transition-all ${
+                      className={`w-full px-4 py-2.5 pr-12 bg-slate-800/50 border rounded-xl text-slate-50 placeholder-slate-500 focus:outline-hidden focus:ring-2 transition-all ${
                         errors.password
                           ? 'border-red-500/50 focus:ring-red-500/20'
                           : 'border-slate-700/50 focus:ring-[rgba(41,199,255,0.2)] focus:border-[rgba(41,199,255,0.3)]'
@@ -223,7 +223,7 @@ function UserEditModal({ user, onClose }) {
                       type={showConfirmPassword ? 'text' : 'password'}
                       value={formData.confirmPassword}
                       onChange={(e) => handleChange('confirmPassword', e.target.value)}
-                      className={`w-full px-4 py-2.5 pr-12 bg-slate-800/50 border rounded-xl text-slate-50 placeholder-slate-500 focus:outline-none focus:ring-2 transition-all ${
+                      className={`w-full px-4 py-2.5 pr-12 bg-slate-800/50 border rounded-xl text-slate-50 placeholder-slate-500 focus:outline-hidden focus:ring-2 transition-all ${
                         errors.confirmPassword
                           ? 'border-red-500/50 focus:ring-red-500/20'
                           : 'border-slate-700/50 focus:ring-[rgba(41,199,255,0.2)] focus:border-[rgba(41,199,255,0.3)]'
@@ -265,10 +265,10 @@ function UserEditModal({ user, onClose }) {
                 <div className={`w-5 h-5 border-2 border-slate-700 rounded bg-slate-800/50 peer-checked:bg-[rgba(41,199,255,0.1)] peer-checked:border-[rgba(41,199,255,0.5)] transition-all ${
                   isCurrentUser ? 'opacity-50 cursor-not-allowed' : ''
                 }`} />
-                <CheckCircle2 className="absolute inset-0 w-5 h-5 text-[var(--accent-blue)] opacity-0 peer-checked:opacity-100 transition-opacity" />
+                <CheckCircle2 className="absolute inset-0 w-5 h-5 text-(--accent-blue) opacity-0 peer-checked:opacity-100 transition-opacity" />
               </div>
               <div className="flex items-center gap-2">
-                <Shield className="w-4 h-4 text-slate-400 group-hover:text-[var(--accent-blue)] transition-colors" />
+                <Shield className="w-4 h-4 text-slate-400 group-hover:text-(--accent-blue) transition-colors" />
                 <span className="text-sm text-slate-300">Admin privileges</span>
                 {isCurrentUser && (
                   <span className="text-xs text-slate-500">(cannot change for yourself)</span>
@@ -291,7 +291,7 @@ function UserEditModal({ user, onClose }) {
                 <div className={`w-5 h-5 border-2 border-slate-700 rounded bg-slate-800/50 peer-checked:bg-[rgba(41,199,255,0.1)] peer-checked:border-[rgba(41,199,255,0.5)] transition-all ${
                   isCurrentUser ? 'opacity-50 cursor-not-allowed' : ''
                 }`} />
-                <CheckCircle2 className="absolute inset-0 w-5 h-5 text-[var(--accent-blue)] opacity-0 peer-checked:opacity-100 transition-opacity" />
+                <CheckCircle2 className="absolute inset-0 w-5 h-5 text-(--accent-blue) opacity-0 peer-checked:opacity-100 transition-opacity" />
               </div>
               <span className="text-sm text-slate-300">
                 Active account

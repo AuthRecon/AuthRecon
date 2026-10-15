@@ -60,7 +60,7 @@ function SecurityNotice() {
       title="Before you use AuthRecon"
       footer={
         <div className="flex items-center justify-between gap-3 w-full">
-          <p className="text-xs text-[var(--text-muted)]">
+          <p className="text-xs text-(--text-muted)">
             {required ? 'We’ll show this again in 7 days.' : 'You can reopen this from the footer at any time.'}
           </p>
           {required ? (
@@ -73,7 +73,7 @@ function SecurityNotice() {
     >
       <div className="space-y-4 text-sm text-slate-300">
         <div className="flex items-start gap-3 p-3 rounded-lg border border-amber-900/50 bg-amber-950/20">
-          <ShieldAlert className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+          <ShieldAlert className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
           <p>
             AuthRecon signs in to applications with real credentials, and it stores credentials, session
             cookies and login scripts. Every effort has been made to protect them (encryption at rest,
@@ -88,7 +88,7 @@ function SecurityNotice() {
           <li>Only connect AI clients you trust, with keys you can revoke (Settings &rsaquo; AI &amp; MCP).</li>
         </ul>
         {user?.is_admin && (
-          <div className="p-3 rounded-lg border border-[var(--stroke-dark)] bg-[var(--bg-2)]">
+          <div className="p-3 rounded-lg border border-(--stroke-dark) bg-(--bg-2)">
             <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">For administrators</p>
             <p>
               Restrict ports 9000 and 8001 with a firewall or reverse proxy, put HTTPS in front of the portal,

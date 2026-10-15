@@ -135,7 +135,7 @@ const securityPostureStory = {
       type: 'divider',
     },
     {
-      type: 'ring',
+      type: 'ring-3',
       label: 'Score Ring',
       description: 'Progress = security score',
     },

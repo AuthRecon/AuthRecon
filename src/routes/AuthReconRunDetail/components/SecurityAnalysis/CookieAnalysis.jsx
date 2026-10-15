@@ -157,7 +157,7 @@ function CookieAnalysis({ cookieData }) {
             <div className="space-y-2">
               {issues.map((issue, idx) => (
                 <div key={idx} className="flex items-start gap-2 text-sm">
-                  <X className="w-4 h-4 text-rose-400 mt-0.5 flex-shrink-0" />
+                  <X className="w-4 h-4 text-rose-400 mt-0.5 shrink-0" />
                   <span className="text-slate-300">{issue}</span>
                 </div>
               ))}
@@ -170,14 +170,14 @@ function CookieAnalysis({ cookieData }) {
           <div className="flex gap-2 mt-4 pt-4 border-t border-slate-700/30">
             <button
               onClick={exportCookiesJSON}
-              className="flex items-center gap-2 px-3 py-1.5 text-xs bg-slate-700/30 hover:bg-slate-700/50 text-slate-300 rounded transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 text-xs bg-slate-700/30 hover:bg-slate-700/50 text-slate-300 rounded-sm transition-colors"
             >
               <Download className="w-3 h-3" />
               Export JSON
             </button>
             <button
               onClick={exportCookiesNetscape}
-              className="flex items-center gap-2 px-3 py-1.5 text-xs bg-slate-700/30 hover:bg-slate-700/50 text-slate-300 rounded transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 text-xs bg-slate-700/30 hover:bg-slate-700/50 text-slate-300 rounded-sm transition-colors"
             >
               <Download className="w-3 h-3" />
               Export Netscape (curl/wget)
@@ -292,13 +292,13 @@ function CookieAnalysis({ cookieData }) {
                                     e.stopPropagation()
                                     copyToClipboard(cookieValue, idx)
                                   }}
-                                  className="flex items-center gap-1 px-2 py-1 text-xs bg-slate-700/30 hover:bg-slate-700/50 text-slate-300 rounded transition-colors"
+                                  className="flex items-center gap-1 px-2 py-1 text-xs bg-slate-700/30 hover:bg-slate-700/50 text-slate-300 rounded-sm transition-colors"
                                 >
                                   <Copy className="w-3 h-3" />
                                   {isCopied ? 'Copied!' : 'Copy'}
                                 </button>
                               </div>
-                              <div className="bg-slate-950/50 rounded border border-slate-800 p-3">
+                              <div className="bg-slate-950/50 rounded-sm border border-slate-800 p-3">
                                 <code className="text-xs text-slate-300 font-mono break-all">
                                   {cookieValue || '(empty)'}
                                 </code>

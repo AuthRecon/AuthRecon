@@ -134,7 +134,7 @@ function NetworkTools() {
                   onChange={(e) => setTarget(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="example.com or 8.8.8.8"
-                  className="w-full px-4 py-3 bg-slate-800/60 border border-slate-700/60 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="w-full px-4 py-3 bg-slate-800/60 border border-slate-700/60 rounded-xl text-slate-100 placeholder-slate-500 focus:outline-hidden focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                   disabled={runToolMutation.isPending}
                 />
               </div>
@@ -145,7 +145,7 @@ function NetworkTools() {
                   id="private"
                   checked={isPrivate}
                   onChange={(e) => setIsPrivate(e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-500 focus:ring-blue-500 focus:ring-offset-slate-900"
+                  className="w-4 h-4 rounded-sm border-slate-600 bg-slate-800 text-blue-500 focus:ring-blue-500 focus:ring-offset-slate-900"
                   disabled={runToolMutation.isPending}
                 />
                 <label htmlFor="private" className="text-sm text-slate-400 cursor-pointer">
@@ -252,7 +252,7 @@ function NetworkTools() {
               <li>• <strong>Ping</strong>: Test basic connectivity (sends 4 ICMP packets)</li>
               <li>• <strong>Traceroute</strong>: Show network path to target (max 20 hops)</li>
               <li>• <strong>DNS Lookup</strong>: Query DNS records for hostname</li>
-              <li>• Press <kbd className="px-1 py-0.5 bg-slate-800 border border-slate-700 rounded text-xs">Enter</kbd> to run</li>
+              <li>• Press <kbd className="px-1 py-0.5 bg-slate-800 border border-slate-700 rounded-sm text-xs">Enter</kbd> to run</li>
               <li>• Results are stored as encrypted artifacts and linked to assets</li>
             </ul>
           </Card>

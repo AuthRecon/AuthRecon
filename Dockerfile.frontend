@@ -29,7 +29,7 @@ COPY package*.json ./
 RUN --mount=type=secret,id=npmrc,target=/root/.npmrc \
     npm ci --no-audit --no-fund
 
-COPY index.html vite.config.js tailwind.config.js postcss.config.js VERSION ./
+COPY index.html vite.config.js postcss.config.js VERSION ./
 COPY public ./public
 COPY src ./src
 

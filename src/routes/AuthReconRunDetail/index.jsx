@@ -205,8 +205,8 @@ function AuthReconRunDetail() {
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-[var(--sidebar-active-bg)] rounded-2xl mb-4">
-              <div className="w-8 h-8 border-4 border-[rgba(41,199,255,0.3)] border-t-[var(--accent-blue)] rounded-full animate-spin" />
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-(--sidebar-active-bg) rounded-2xl mb-4">
+              <div className="w-8 h-8 border-4 border-[rgba(41,199,255,0.3)] border-t-(--accent-blue) rounded-full animate-spin" />
             </div>
               <p className="text-slate-400">Loading run details...</p>
             </div>
@@ -300,7 +300,7 @@ function AuthReconRunDetail() {
         <Card padding="lg">
           <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
             <div className="space-y-1 max-w-3xl">
-              <h1 className="text-2xl font-semibold text-slate-50 break-words" title={run.target_url}>
+              <h1 className="text-2xl font-semibold text-slate-50 wrap-break-word" title={run.target_url}>
                 {truncateUrl(run.target_url) || 'Target'}
                 <span className="text-slate-500"> — </span>
                 <span className="font-mono text-sm text-slate-300">{run.id}</span>
@@ -359,8 +359,8 @@ function AuthReconRunDetail() {
               </Badge>
             )}
             {run.status === 'running' && (
-              <div className="flex items-center gap-2 text-sm text-[var(--accent-blue)]">
-                <div className="w-2 h-2 bg-[var(--accent-blue)] rounded-full animate-pulse" />
+              <div className="flex items-center gap-2 text-sm text-(--accent-blue)">
+                <div className="w-2 h-2 bg-(--accent-blue) rounded-full animate-pulse" />
                 <span>Auto-refreshing...</span>
               </div>
             )}
@@ -429,12 +429,12 @@ function AuthReconRunDetail() {
         <div className="telemetry-container space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-xs uppercase tracking-widest text-[var(--text-muted)]">Stage Console</p>
+              <p className="text-xs uppercase tracking-widest text-(--text-muted)">Stage Console</p>
               <p className="text-sm text-slate-400">Live telemetry from this run&apos;s timeline</p>
             </div>
             <Button
               type="button"
-              variant={consoleCollapsed ? 'outline' : 'ghost'}
+              variant={consoleCollapsed ? 'outline-solid' : 'ghost'}
               size="sm"
               onClick={() => setConsoleCollapsed((prev) => !prev)}
             >
@@ -465,7 +465,7 @@ function AuthReconRunDetail() {
               onClick={() => setActiveTab('overview')}
               className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'overview'
-                  ? 'border-[--accent-blue] text-[--accent-blue]'
+                  ? 'border-(--accent-blue) text-(--accent-blue)'
                   : 'border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-600'
               }`}
               style={activeTab === 'overview' ? {
@@ -482,7 +482,7 @@ function AuthReconRunDetail() {
               onClick={() => setActiveTab('security')}
               className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'security'
-                  ? 'border-[--accent-blue] text-[--accent-blue]'
+                  ? 'border-(--accent-blue) text-(--accent-blue)'
                   : 'border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-600'
               }`}
               style={activeTab === 'security' ? {
@@ -499,7 +499,7 @@ function AuthReconRunDetail() {
               onClick={() => setActiveTab('timeline')}
               className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'timeline'
-                  ? 'border-[--accent-blue] text-[--accent-blue]'
+                  ? 'border-(--accent-blue) text-(--accent-blue)'
                   : 'border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-600'
               }`}
               style={activeTab === 'timeline' ? {
@@ -516,7 +516,7 @@ function AuthReconRunDetail() {
               onClick={() => setActiveTab('httpflow')}
               className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'httpflow'
-                  ? 'border-[--accent-blue] text-[--accent-blue]'
+                  ? 'border-(--accent-blue) text-(--accent-blue)'
                   : 'border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-600'
               }`}
               style={activeTab === 'httpflow' ? {

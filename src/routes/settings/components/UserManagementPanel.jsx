@@ -86,7 +86,7 @@ function UserManagementPanel() {
                         </div>
 
                         {user.is_admin && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[rgba(41,199,255,0.1)] border border-[rgba(41,199,255,0.3)] text-xs text-[var(--accent-blue)]">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[rgba(41,199,255,0.1)] border border-[rgba(41,199,255,0.3)] text-xs text-(--accent-blue)">
                             <Shield className="w-3 h-3" />
                             Admin
                           </span>
@@ -126,7 +126,7 @@ function UserManagementPanel() {
                     <div className="flex items-center gap-2 ml-4">
                       <button
                         onClick={() => setEditingUser(user)}
-                        className="p-2 rounded-lg border border-slate-700/50 bg-slate-800/50 hover:bg-slate-800 hover:border-[rgba(41,199,255,0.3)] text-slate-400 hover:text-[var(--accent-blue)] transition-all"
+                        className="p-2 rounded-lg border border-slate-700/50 bg-slate-800/50 hover:bg-slate-800 hover:border-[rgba(41,199,255,0.3)] text-slate-400 hover:text-(--accent-blue) transition-all"
                         title="Edit user"
                       >
                         <Edit2 className="w-4 h-4" />

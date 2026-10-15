@@ -91,28 +91,28 @@ function Layout({ children }) {
       {/* Sidebar */}
       <aside className={`flex flex-col sidebar transition-all duration-300 ${isSidebarCollapsed ? 'w-20' : 'w-72'}`}>
         {/* Logo / Brand */}
-        <div className="p-6 border-b border-[var(--stroke-dark)] relative">
+        <div className="p-6 border-b border-(--stroke-dark) relative">
           <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3'}`}>
-            <div className="p-2 rounded" style={{ background: 'rgba(0,170,255,0.12)' }}>
-              <Shield className="w-6 h-6 text-[var(--accent-blue)]" />
+            <div className="p-2 rounded-sm" style={{ background: 'rgba(0,170,255,0.12)' }}>
+              <Shield className="w-6 h-6 text-(--accent-blue)" />
             </div>
             {!isSidebarCollapsed && (
               <div>
-                <h1 className="text-lg font-bold text-[var(--text-primary)]">AuthRecon</h1>
-                <p className="text-xs text-[var(--text-muted)]">v{VERSION.toString()}</p>
+                <h1 className="text-lg font-bold text-(--text-primary)">AuthRecon</h1>
+                <p className="text-xs text-(--text-muted)">v{VERSION.toString()}</p>
               </div>
             )}
           </div>
           {/* Collapse Toggle Button */}
           <button
             onClick={toggleSidebar}
-            className="absolute -right-3 top-8 p-1.5 rounded-full bg-[var(--bg-secondary)] border border-[var(--stroke-dark)] hover:bg-[var(--bg-tertiary)] hover:border-[var(--accent-blue)]/30 transition-all z-10"
+            className="absolute -right-3 top-8 p-1.5 rounded-full bg-(--bg-secondary) border border-(--stroke-dark) hover:bg-(--bg-tertiary) hover:border-(--accent-blue)/30 transition-all z-10"
             title={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             {isSidebarCollapsed ? (
-              <ChevronRight className="w-4 h-4 text-[var(--text-secondary)]" />
+              <ChevronRight className="w-4 h-4 text-(--text-secondary)" />
             ) : (
-              <ChevronLeft className="w-4 h-4 text-[var(--text-secondary)]" />
+              <ChevronLeft className="w-4 h-4 text-(--text-secondary)" />
             )}
           </button>
         </div>
@@ -132,14 +132,14 @@ function Layout({ children }) {
               >
                 <div className={`flex items-center ${isSidebarCollapsed ? '' : 'gap-3'}`}>
                   <Icon
-                    className={`w-5 h-5 ${active ? 'text-[var(--accent-blue)]' : 'text-slate-400 group-hover:text-slate-200'}`}
+                    className={`w-5 h-5 ${active ? 'text-(--accent-blue)' : 'text-slate-400 group-hover:text-slate-200'}`}
                   />
                   {!isSidebarCollapsed && (
                     <div className="flex-1 min-w-0">
-                      <div className={`font-medium text-sm ${active ? 'text-[var(--accent-blue-strong)]' : 'text-[var(--text-secondary)] group-hover:text-white'}`}>
+                      <div className={`font-medium text-sm ${active ? 'text-(--accent-blue-strong)' : 'text-(--text-secondary) group-hover:text-white'}`}>
                         {item.name}
                       </div>
-                      <div className="text-xs text-[var(--text-muted)] truncate">
+                      <div className="text-xs text-(--text-muted) truncate">
                         {item.description}
                       </div>
                     </div>
@@ -157,14 +157,14 @@ function Layout({ children }) {
           >
             <div className={`flex items-center ${isSidebarCollapsed ? '' : 'gap-3'}`}>
               <Settings
-                className={`w-5 h-5 ${isActive('/settings') ? 'text-[var(--accent-blue)]' : 'text-slate-400 group-hover:text-slate-200'}`}
+                className={`w-5 h-5 ${isActive('/settings') ? 'text-(--accent-blue)' : 'text-slate-400 group-hover:text-slate-200'}`}
               />
               {!isSidebarCollapsed && (
                 <div className="flex-1 min-w-0">
-                  <div className={`font-medium text-sm ${isActive('/settings') ? 'text-[var(--accent-blue-strong)]' : 'text-[var(--text-secondary)] group-hover:text-white'}`}>
+                  <div className={`font-medium text-sm ${isActive('/settings') ? 'text-(--accent-blue-strong)' : 'text-(--text-secondary) group-hover:text-white'}`}>
                     Settings
                   </div>
-                  <div className="text-xs text-[var(--text-muted)] truncate">
+                  <div className="text-xs text-(--text-muted) truncate">
                     Configuration
                   </div>
                 </div>
@@ -174,18 +174,18 @@ function Layout({ children }) {
         </nav>
 
         {/* User Info */}
-        <div className="p-4 border-t border-[var(--stroke-dark)]">
+        <div className="p-4 border-t border-(--stroke-dark)">
           <div className={`flex items-center px-4 py-3 bg-white/5 rounded-xl ${isSidebarCollapsed ? 'flex-col gap-2' : 'gap-3'}`}>
-            <div className="w-10 h-10 rounded flex items-center justify-center font-semibold flex-shrink-0 bg-gradient-to-br from-[#1ab9ff] to-[#008ec7] text-white">
+            <div className="w-10 h-10 rounded-sm flex items-center justify-center font-semibold shrink-0 bg-linear-to-br from-[#1ab9ff] to-[#008ec7] text-white">
               {user?.username?.[0]?.toUpperCase() || 'U'}
             </div>
             {!isSidebarCollapsed && (
               <>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-[var(--text-primary)] truncate">
+                  <div className="text-sm font-medium text-(--text-primary) truncate">
                     {user?.username || 'User'}
                   </div>
-                  <div className="text-xs text-[var(--text-muted)]">
+                  <div className="text-xs text-(--text-muted)">
                     {user?.role || 'Operator'}
                   </div>
                 </div>
