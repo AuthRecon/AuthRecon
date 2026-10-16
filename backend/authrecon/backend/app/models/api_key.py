@@ -65,6 +65,8 @@ class APIKey(Base):
     )
 
     # Lifecycle management
+    # "full" or "read": a read-only key is refused on every write (api/deps.py).
+    scope: Mapped[str] = Column(String(20), nullable=False, default="full", server_default="full")
     is_revoked: Mapped[bool] = Column(
         Boolean,
         nullable=False,

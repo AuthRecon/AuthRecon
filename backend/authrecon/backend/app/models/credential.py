@@ -20,6 +20,9 @@ class StoredCredential(Base):
     username: Mapped[str] = Column(String(255), nullable=False)
     secret_encrypted: Mapped[str] = Column(Text, nullable=False)
     additional_fields: Mapped[dict] = Column(JSONB, nullable=False, default=dict)
+    # Hosts this credential may be used on (services/credential_domains.py).
+    # Empty = not bound yet: the first run binds it to its target's host.
+    allowed_domains: Mapped[list] = Column(JSONB, nullable=False, default=list)
     is_archived: Mapped[bool] = Column(Boolean, nullable=False, default=False)
 
     owner_profile_id: Mapped[str] = Column(

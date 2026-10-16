@@ -50,6 +50,7 @@ from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
 
 from ..types import FormAuthResult, RecordedAction, ScreenshotCapture
+from app.services.automation.typing_guard import ensure_safe_to_type
 
 
 async def attempt_form_login_httpx(
@@ -178,6 +179,8 @@ async def attempt_form_login_httpx(
         final_url = None
         post_auth_html = None
         response = None
+        # The form's action can point anywhere: check it like a page we type into.
+        ensure_safe_to_type(auth_endpoint)
 
         for payload in payload_variants:
             try:

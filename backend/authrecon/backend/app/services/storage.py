@@ -80,6 +80,10 @@ class ArtifactStorage:
         self._atomic_write(storage_path, payload)
         return str(relative_path.as_posix())
 
+    def read_stored(self, relative_path: str) -> bytes:
+        """The stored (still encrypted) bytes at a path ``save_bytes`` returned."""
+        return self._resolve(Path(relative_path)).read_bytes()
+
     def replace_bytes(self, relative_path: str, payload: bytes) -> None:
         """Atomically overwrite an existing artifact with already-prepared bytes (migration)."""
         self._atomic_write(self._resolve(Path(relative_path)), payload)

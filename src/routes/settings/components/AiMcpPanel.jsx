@@ -7,7 +7,7 @@ import {
   useAiStatus,
   useApiAccess,
   useSetApiAccess,
-  useSetMcpEnabled,
+  useSetMcpApproval, useSetMcpEnabled,
   useUpdateAiPreferences,
 } from '../../../services/useAiStatus'
 import { useCreateApiKey, useRevokeApiKey } from '../../../services/useApiKeys'
@@ -101,12 +101,13 @@ function ConnectInstructions({ url, apiKey }) {
 function CreateKey({ url }) {
   const create = useCreateApiKey()
   const [name, setName] = useState('Claude Code')
+  const [readOnly, setReadOnly] = useState(false)
   const [created, setCreated] = useState(null)
 
   const submit = async (e) => {
     e.preventDefault()
     try {
-      setCreated(await create.mutateAsync({ name: name.trim() || 'MCP client' }))
+      setCreated(await create.mutateAsync({ name: name.trim() || 'MCP client', scope: readOnly ? 'read' : 'full' }))
     } catch {
       /* error shown below */
     }
@@ -142,6 +143,11 @@ function CreateKey({ url }) {
           className="w-full px-3 py-2 rounded-lg bg-slate-950/70 border border-slate-800 text-sm text-slate-100"
         />
       </label>
+      <label className="flex items-center gap-2 text-sm text-slate-300 sm:pb-2" title="The client can list and read runs, setup and exports, but cannot start, cancel, rerun or verify anything.">
+        <input type="checkbox" className="w-4 h-4" style={{ accentColor: 'var(--accent-blue)' }}
+          checked={readOnly} onChange={(e) => setReadOnly(e.target.checked)} />
+        Read-only
+      </label>
       <Button type="submit" disabled={create.isPending}>
         <KeyRound className="w-4 h-4 mr-2 inline" />
         {create.isPending ? 'Creating…' : 'Create MCP key'}
@@ -163,7 +169,10 @@ function YourKeys({ keys }) {
       {keys.map((k) => (
         <li key={k.id} className="flex items-center justify-between gap-3 p-3">
           <div className="min-w-0">
-            <p className="text-sm text-slate-200 truncate">{k.name} <span className="text-xs text-slate-500 font-mono">{k.prefix}</span></p>
+            <p className="text-sm text-slate-200 truncate">
+              {k.name} <span className="text-xs text-slate-500 font-mono">{k.prefix}</span>
+              {k.scope === 'read' && <span className="ml-2 text-xs text-sky-300">read-only</span>}
+            </p>
             <p className="text-xs text-slate-500">
               Created {formatWhen(k.created_at)} · last AI connection {formatWhen(k.last_mcp_used_at)}
             </p>
@@ -293,6 +302,7 @@ function AiMcpPanel() {
   const { data, isLoading, error } = useAiStatus()
   const updatePrefs = useUpdateAiPreferences()
   const setMcp = useSetMcpEnabled()
+  const setApproval = useSetMcpApproval()
   const enabled = Boolean(data?.mcp_enabled)
   const isAdmin = Boolean(data?.is_admin)
   const url = mcpUrl(data?.mcp_path || '/apps/authrecon/mcp')
@@ -338,6 +348,15 @@ function AiMcpPanel() {
           />
         )}
         {setMcp.isError && <p className="text-sm text-rose-300">Could not change the MCP setting.</p>}
+        {isAdmin && (
+          <Toggle
+            checked={Boolean(data?.mcp_runs_need_approval)}
+            disabled={isLoading || setApproval.isPending}
+            onChange={(v) => setApproval.mutate(v)}
+            label="Runs started by AI clients need approval (admin)"
+            hint="An AI client can submit a run, but it waits on the run page until a person clicks Approve. Approval only works in this web UI, never with an API key."
+          />
+        )}
 
         <Toggle
           checked={Boolean(data?.use_ai_suggestions)}

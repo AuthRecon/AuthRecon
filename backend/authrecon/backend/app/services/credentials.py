@@ -50,6 +50,7 @@ def create_credential(db: Session, *, owner: AuthReconProfile | None, payload: C
         username=payload.username,
         secret_encrypted=_encrypt_secret(payload.secret),
         additional_fields=payload.additional_fields,
+        allowed_domains=payload.allowed_domains,
         owner_profile_id=owner.id if owner else None,
     )
     db.add(credential)
@@ -85,6 +86,9 @@ def update_credential(db: Session, *, credential: StoredCredential, actor: AuthR
         changes["secret"] = "***"
     if payload.additional_fields is not None:
         credential.additional_fields = payload.additional_fields
+    if payload.allowed_domains is not None:
+        credential.allowed_domains = payload.allowed_domains
+        changes["allowed_domains"] = ", ".join(payload.allowed_domains) or "(unbound)"
     if payload.is_archived is not None:
         credential.is_archived = payload.is_archived
         changes["is_archived"] = str(payload.is_archived)

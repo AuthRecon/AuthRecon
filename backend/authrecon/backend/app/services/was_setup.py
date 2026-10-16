@@ -108,6 +108,8 @@ def build_was_setup(run) -> dict[str, Any] | None:
         "pattern_missing": method == "selenium" and not pattern_regex(run.pattern),
         "scripts": scripts,
         "notes": notes,
+        # Grade and starting scan settings (services/scan_readiness.py); None for older runs.
+        "readiness": _options(run).get("scan_readiness"),
     }
 
 

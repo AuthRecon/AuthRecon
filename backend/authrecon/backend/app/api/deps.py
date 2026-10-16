@@ -10,7 +10,7 @@ Authentication Methods:
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from fastapi import Depends, Header, HTTPException, status
+from fastapi import Depends, Header, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
@@ -117,6 +117,7 @@ def get_profile_from_jwt_optional(
 
 
 def get_profile_from_api_key(
+    request: Request,
     x_api_key: str | None = Header(None, alias="X-API-Key"),
     db: Session = Depends(get_db),
 ) -> AuthReconProfile | None:
@@ -139,7 +140,13 @@ def get_profile_from_api_key(
         6. Update last_used_at timestamp
     """
     resolved = resolve_api_key(x_api_key, db)
-    return resolved[1] if resolved else None
+    if not resolved:
+        return None
+    key, profile = resolved
+    # A read-only key never writes: submit, cancel, rerun, verify, settings...
+    if (key.scope or "full") == "read" and request.method not in ("GET", "HEAD", "OPTIONS"):
+        raise HTTPException(status_code=403, detail="This API key is read-only.")
+    return profile
 
 
 def resolve_api_key(x_api_key: str | None, db: Session) -> tuple[APIKey, AuthReconProfile] | None:

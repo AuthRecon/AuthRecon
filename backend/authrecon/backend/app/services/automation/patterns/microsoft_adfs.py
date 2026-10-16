@@ -18,6 +18,7 @@ from ..username_utils import get_username_variants
 from ..security_context_extractor import extract_security_context
 from ..pre_run_discovery import discover_auth_elements
 from ..security_context_extractor import extract_security_context
+from app.services.automation.typing_guard import ensure_safe_to_type
 
 
 EMAIL_SELECTORS: List[str] = [
@@ -263,6 +264,7 @@ def run_azure_login(
             raise RuntimeError("Azure login page did not expose a password field after username submission.")
         password_selector = _selector_for_element(driver, password_field)
         password_field.clear()
+        ensure_safe_to_type(driver.current_url)
         password_field.send_keys(password)
         events.append("Populated password field.")
         recorded_actions.append(
@@ -579,6 +581,7 @@ def _run_sts_flow(
         raise RuntimeError("STS login page did not expose a password field.")
     password_selector = _selector_for_element(driver, password_field)
     password_field.clear()
+    ensure_safe_to_type(driver.current_url)
     password_field.send_keys(password)
     events.append("STS: populated password field.")
     screenshots.append(_capture(driver, "sts_step_filled"))

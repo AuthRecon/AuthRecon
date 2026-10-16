@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from datetime import datetime
 
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -20,6 +22,10 @@ class APIKeyCreate(BaseModel):
         ge=1,
         le=365,
         description="Optional: Number of days until expiration (1-365). Null = never expires"
+    )
+    scope: Literal["full", "read"] = Field(
+        default="full",
+        description="'read' = read-only: lists and inspects, every write (submit, cancel, rerun, verify) is refused",
     )
 
 
@@ -42,6 +48,7 @@ class APIKeyCreated(BaseModel):
     )
     created_at: datetime
     expires_at: datetime | None = None
+    scope: str = "full"
 
 
 class APIKeyRead(BaseModel):
@@ -58,6 +65,7 @@ class APIKeyRead(BaseModel):
     created_at: datetime
     expires_at: datetime | None = None
     last_used_at: datetime | None = None
+    scope: str = "full"
 
     model_config = ConfigDict(from_attributes=True)
 

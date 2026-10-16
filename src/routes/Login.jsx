@@ -14,7 +14,10 @@ import VERSION from '../config/version'
  */
 function Login() {
   const navigate = useNavigate()
-  const { login, isLoading, error: authError } = useAuthStore()
+  const { login, verifyMfa, isLoading, error: authError } = useAuthStore()
+  // Set after the password step for a two-factor account: then ask for the code.
+  const [mfaToken, setMfaToken] = useState(null)
+  const [mfaCode, setMfaCode] = useState('')
 
   const [formData, setFormData] = useState({
     username: '',
@@ -86,12 +89,30 @@ function Login() {
     }
 
     try {
-      await login(formData.username, formData.password)
-      // Redirect to dashboard on success
-      navigate('/')
+      const result = await login(formData.username, formData.password)
+      if (result?.mfa_required) {
+        setMfaToken(result.mfa_token)
+        return
+      }
+      // Admins who must set up two-factor go straight to the setup page.
+      navigate(result?.mfa_enrollment_required ? '/settings?tab=account' : '/')
     } catch (error) {
       // Error is handled by the store
       console.error('Login failed:', error)
+    }
+  }
+
+  const handleMfaSubmit = async (e) => {
+    e.preventDefault()
+    try {
+      await verifyMfa(mfaToken, mfaCode)
+      navigate('/')
+    } catch (error) {
+      // A dead sign-in (expired, or too many wrong codes) starts again at the password.
+      if ((error.response?.data?.detail || '').includes('password again')) {
+        setMfaToken(null)
+        setMfaCode('')
+      }
     }
   }
 
@@ -120,7 +141,35 @@ function Login() {
           </div>
         )}
 
+        {/* Two-factor code step */}
+        {mfaToken && (
+          <form onSubmit={handleMfaSubmit} className="space-y-4">
+            <Input
+              label="Two-factor code"
+              name="code"
+              type="text"
+              inputMode="text"
+              placeholder="6-digit code, or a backup code"
+              icon={Lock}
+              value={mfaCode}
+              onChange={(e) => setMfaCode(e.target.value)}
+              required
+              autoComplete="one-time-code"
+              autoFocus
+            />
+            <p className="text-xs text-slate-500">Open your authenticator app, or use one of your backup codes.</p>
+            <Button type="submit" variant="primary" size="lg" loading={isLoading} className="w-full">
+              {isLoading ? 'Verifying...' : 'Verify'}
+            </Button>
+            <button type="button" className="w-full text-sm text-slate-400 hover:text-slate-200"
+              onClick={() => { setMfaToken(null); setMfaCode('') }}>
+              Back
+            </button>
+          </form>
+        )}
+
         {/* Login Form */}
+        {!mfaToken && (
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
             label="Username"
@@ -159,6 +208,7 @@ function Login() {
             {isLoading ? 'Signing in...' : 'Sign In'}
           </Button>
         </form>
+        )}
 
         {/* Footer */}
         <div className="mt-6 pt-6 border-t border-slate-700/50 text-center">

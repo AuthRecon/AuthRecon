@@ -33,6 +33,7 @@ from ..types import FormAuthResult, ScreenshotCapture, RecordedAction, Automatio
 from ..username_utils import get_username_variants
 from ..pre_run_discovery import discover_auth_elements
 from .form_login import _extract_heading, _extract_feedback_message
+from app.services.automation.typing_guard import ensure_safe_to_type
 
 
 # OAuth provider-specific selectors
@@ -311,6 +312,7 @@ def _authenticate_google(
         raise RuntimeError("Google OAuth page did not expose password field.")
 
     password_field.clear()
+    ensure_safe_to_type(driver.current_url)
     password_field.send_keys(password)
     events.append("Entered password (Google OAuth).")
     actions.append(RecordedAction(action="type", selector="input[type='password']", value="${PASSWORD}", note="Google password"))
@@ -347,6 +349,7 @@ def _authenticate_github(
         raise RuntimeError("GitHub OAuth page did not expose password field.")
 
     password_field.clear()
+    ensure_safe_to_type(driver.current_url)
     password_field.send_keys(password)
     events.append("Entered password (GitHub OAuth).")
     actions.append(RecordedAction(action="type", selector="input[name='password']", value="${PASSWORD}", note="GitHub password"))
@@ -400,6 +403,7 @@ def _authenticate_generic(
             password_selector = _selector_for_element(driver, password_field)
 
             password_field.clear()
+            ensure_safe_to_type(driver.current_url)
             password_field.send_keys(password)
             events.append("Entered password (generic OAuth).")
             actions.append(RecordedAction(
@@ -442,6 +446,7 @@ def _authenticate_generic(
                     password_selector = _selector_for_element(driver, password_field)
 
                     password_field.clear()
+                    ensure_safe_to_type(driver.current_url)
                     password_field.send_keys(password)
                     events.append("Entered password (generic OAuth step 2).")
                     actions.append(RecordedAction(

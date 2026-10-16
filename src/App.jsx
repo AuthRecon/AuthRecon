@@ -57,11 +57,14 @@ function App() {
     initialize()
   }, [initialize])
 
+  // Only with a session: the status endpoint needs one (on the login page it
+  // would just answer 401). Reloads after a sign-in.
+  const user = useAuthStore((state) => state.user)
   useEffect(() => {
-    if (isInitialized) {
+    if (isInitialized && user) {
       loadLicense()
     }
-  }, [loadLicense, isInitialized])
+  }, [loadLicense, isInitialized, user])
 
   // Show loading while checking initialization
   if (isInitialized === null) {

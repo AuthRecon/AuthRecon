@@ -25,7 +25,11 @@ from starlette.websockets import WebSocketState
 from pydantic import BaseModel, ConfigDict, Field
 from slowapi.util import get_remote_address
 
-from auth import SessionUser, configure_user_lookup, get_current_user_from_token, create_jwt_token, revoke_jti
+from auth import SessionUser, configure_user_lookup, get_current_user_from_token, create_jwt_token, revoke_jti, create_mfa_pending_token
+from auth import (
+    AUTHRECON_COOKIE, AUTHRECON_COOKIE_PATH, SESSION_COOKIE, authenticated_by_cookie,
+    clear_session_cookies, set_cookie, set_session_cookie,
+)
 
 import secrets as _secrets
 
@@ -54,6 +58,8 @@ from models.license import ClientLicense, LicenseActivation  # noqa: F401
 from models.audit_log import AuditLog  # noqa: F401 — registers table with Base.metadata
 from models.security_notice import SecurityNoticeAck  # noqa: F401 — registers table
 from security_notice import router as security_notice_router
+from models.mfa import UserMFA  # noqa: F401 — registers table
+import mfa
 import audit
 from tools_registry import ToolRegistry
 from user_store import UserStore
@@ -80,6 +86,7 @@ HOP_HEADERS = {
 }
 # Trust headers the portal sets itself; a client-supplied copy is never forwarded.
 CLIENT_STRIPPED_HEADERS = {
+    "cookie",  # the portal's session cookies stay at the portal
     "x-admin-token",
     "x-portal-secret",
     "x-portal-user-id",
@@ -103,6 +110,10 @@ class ServiceLoginRequest(BaseModel):
 
 
 # API Models for JWT authentication
+# Containers that run live views (VNC): the worker, or with browser isolation the browser container.
+VNC_HOSTS = ("authrecon-worker", "authrecon-browser")
+
+
 class APILoginRequest(BaseModel):
     """API login request model."""
     username: str
@@ -110,9 +121,13 @@ class APILoginRequest(BaseModel):
 
 
 class APILoginResponse(BaseModel):
-    """API login response model."""
-    token: str
+    """API login response model. For an account with two-factor authentication
+    the password step returns mfa_required + mfa_token and no session token."""
+    token: str | None = None
     user: dict
+    mfa_required: bool = False
+    mfa_token: str | None = None
+    mfa_enrollment_required: bool = False
 
     def resolve_username(self) -> str:
         return (self.username or self.email or "").strip().lower()
@@ -178,6 +193,7 @@ def create_app(config_path: Optional[Path] = None) -> FastAPI:
     engine = init_engine(config.database_url)
     Base.metadata.create_all(bind=engine)
     user_store = UserStore(get_session, config.user_store_path)
+    mfa.configure(encryption_manager, user_store)
     config_store = ConfigStore(get_session, encryptor=encryption_manager)
     asset_store = AssetStore(get_session)
     artifact_store = ArtifactStore(get_session, encryptor=encryption_manager)
@@ -218,6 +234,7 @@ def create_app(config_path: Optional[Path] = None) -> FastAPI:
     # Include user management router
     app.include_router(users_router, prefix="/api")
     app.include_router(security_notice_router, prefix="/api")
+    app.include_router(mfa.router, prefix="/api")
 
     def _require_service_secret(request: Request) -> None:
         provided = request.headers.get("x-portal-service-secret")
@@ -516,7 +533,7 @@ def create_app(config_path: Optional[Path] = None) -> FastAPI:
     # JWT API Authentication Endpoints (for React frontend)
 
     @app.post("/api/auth/login", response_model=APILoginResponse)
-    async def api_login(request: Request, payload: APILoginRequest):
+    async def api_login(request: Request, response: Response, payload: APILoginRequest):
         """JWT-based login endpoint for React frontend."""
         client_ip = get_remote_address(request)
         _throttle(client_ip, max_attempts=5, window_seconds=60)
@@ -537,15 +554,26 @@ def create_app(config_path: Optional[Path] = None) -> FastAPI:
             audit.emit(audit.LOGIN_FAILURE, actor_username=username, actor_ip=client_ip)
             raise HTTPException(status_code=401, detail="Invalid credentials")
 
-        # Create JWT token
+        # Two-factor accounts get a short-lived token for /api/auth/mfa/verify, not a session.
+        if mfa.is_enabled(record["id"]):
+            return {
+                "mfa_required": True,
+                "mfa_token": create_mfa_pending_token(record["username"], record["id"]),
+                "user": {"username": record["username"]},
+            }
+        # Admins must set up MFA first when the policy requires it: a session that
+        # only reaches the MFA endpoints until they do.
+        enroll_only = mfa.enrollment_required(record)
         token = create_jwt_token(
             username=record["username"],
             is_admin=record["is_admin"],
-            user_id=record["id"]
+            user_id=record["id"],
+            mfa_enroll=enroll_only,
         )
 
         SECURITY_LOGGER.info(f"Successful login for user '{username}' from {client_ip}")
         audit.emit(audit.LOGIN_SUCCESS, actor_username=record["username"], actor_ip=client_ip)
+        set_session_cookie(response, request, token)
 
         return {
             "token": token,
@@ -553,11 +581,12 @@ def create_app(config_path: Optional[Path] = None) -> FastAPI:
                 "username": record["username"],
                 "is_admin": record["is_admin"],
                 "id": record["id"]
-            }
+            },
+            "mfa_enrollment_required": enroll_only,
         }
 
     @app.post("/api/auth/setup", response_model=APILoginResponse)
-    async def api_setup(payload: APILoginRequest):
+    async def api_setup(request: Request, response: Response, payload: APILoginRequest):
         """JWT-based setup endpoint for React frontend - creates first admin user."""
         # Check if portal is already initialized
         if user_store.is_initialized:
@@ -597,6 +626,7 @@ def create_app(config_path: Optional[Path] = None) -> FastAPI:
         )
 
         audit.emit(audit.SETUP_COMPLETED, actor_username=record["username"])
+        set_session_cookie(response, request, token)
 
         return {
             "token": token,
@@ -608,7 +638,7 @@ def create_app(config_path: Optional[Path] = None) -> FastAPI:
         }
 
     @app.post("/api/auth/logout")
-    async def api_logout(request: Request):
+    async def api_logout(request: Request, response: Response):
         """Revoke the current JWT by adding its jti to the Redis blocklist.
 
         Validates the token signature before revoking (prevents revoking arbitrary tokens),
@@ -616,9 +646,10 @@ def create_app(config_path: Optional[Path] = None) -> FastAPI:
         so the client can safely clear its local state regardless of token status.
         """
         import time as _time
+        clear_session_cookies(response)
         auth_header = request.headers.get("Authorization", "")
-        if auth_header.startswith("Bearer "):
-            raw_token = auth_header[7:]
+        raw_token = auth_header[7:] if auth_header.startswith("Bearer ") else request.cookies.get(SESSION_COOKIE)
+        if raw_token:
             try:
                 from auth import JWT_SECRET_KEY as _jwtkey, JWT_ALGORITHM as _jwtalg
                 import jwt as _pyjwt
@@ -636,6 +667,39 @@ def create_app(config_path: Optional[Path] = None) -> FastAPI:
             except Exception:
                 pass  # Invalid signature or missing fields — nothing to revoke
         return {"success": True}
+
+    @app.post("/api/auth/authrecon-session")
+    async def api_authrecon_session(
+        request: Request, response: Response, user: SessionUser = Depends(get_current_user_from_token),
+    ):
+        """Sign the web UI's session in to AuthRecon: exchange a service token for
+        an AuthRecon API token here, and hand it back only as an HttpOnly cookie
+        that the /apps/authrecon proxy turns into the Authorization header."""
+        if not config.portal_api_secret:
+            raise HTTPException(status_code=503, detail="Portal SSO not configured.")
+        try:
+            service_id = str(tool_registry.get_tool("auth_recon").get("service_id") or "auth_recon")
+        except KeyError:
+            service_id = "auth_recon"
+        service_token = create_service_token(user, config.portal_api_secret, service=service_id)
+        try:
+            async with httpx.AsyncClient(timeout=15) as client:
+                resp = await client.post(
+                    "http://authrecon-api:8000/api/v1/auth/portal-login", json={"token": service_token},
+                )
+        except httpx.RequestError as exc:
+            raise HTTPException(status_code=503, detail="AuthRecon is not reachable") from exc
+        if resp.status_code != 200:
+            raise HTTPException(status_code=502, detail="AuthRecon refused the sign-in")
+        data = resp.json()
+        expires_at = data.get("expires_at") or ""
+        try:
+            max_age = int(datetime.fromisoformat(expires_at.replace("Z", "+00:00")).timestamp() - _time.time())
+        except ValueError:
+            max_age = 3600
+        set_cookie(response, request, AUTHRECON_COOKIE, data["access_token"], max(60, max_age),
+                   path=AUTHRECON_COOKIE_PATH)
+        return {"expires_at": expires_at}
 
     @app.get("/api/auth/me")
     async def api_auth_me(user: SessionUser = Depends(get_current_user_from_token)):
@@ -700,8 +764,12 @@ def create_app(config_path: Optional[Path] = None) -> FastAPI:
         return RedirectResponse(url, status_code=302)
 
     @app.post("/api/tools/{tool_id}/service-token")
-    async def issue_service_token(tool_id: str, user: SessionUser = Depends(_require_portal_auth)):
-        """Mint a short-lived portal token for SSO-enabled tools (used by React frontend)."""
+    async def issue_service_token(tool_id: str, request: Request, user: SessionUser = Depends(_require_portal_auth)):
+        """Mint a short-lived portal token for SSO-enabled tools. Bearer callers
+        only: a cookie session (the web UI) never receives a token, so a script
+        injected into the page cannot mint one (see /api/auth/authrecon-session)."""
+        if authenticated_by_cookie(request):
+            raise HTTPException(status_code=403, detail="Not available to browser sessions")
         try:
             tool = tool_registry.get_tool(tool_id)
         except KeyError as exc:
@@ -893,7 +961,12 @@ def create_app(config_path: Optional[Path] = None) -> FastAPI:
     ):
         path = _safe_proxy_path(path)
         target = f"/api/{path}" if path else "/api"
-        return await _proxy_request(request, "http://authrecon-api:8000", target)
+        # Web UI: the AuthRecon token lives in an HttpOnly cookie (api_authrecon_session).
+        extra = None
+        api_cookie = request.cookies.get(AUTHRECON_COOKIE)
+        if api_cookie and authenticated_by_cookie(request):
+            extra = {"Authorization": f"Bearer {api_cookie}"}
+        return await _proxy_request(request, "http://authrecon-api:8000", target, extra_headers=extra)
 
     @app.post("/api/authrecon/vnc-token/{run_id}", include_in_schema=False)
     async def issue_vnc_token(
@@ -925,11 +998,16 @@ def create_app(config_path: Optional[Path] = None) -> FastAPI:
             raise HTTPException(status_code=resp.status_code, detail="VNC session not available")
 
         vnc_port = resp.json()["vnc_port"]
+        # Only the two containers that run live views; never a host from elsewhere.
+        vnc_host = resp.json().get("vnc_host", "authrecon-worker")
+        if vnc_host not in VNC_HOSTS:
+            raise HTTPException(status_code=502, detail="VNC session not available")
 
         ticket = _secrets.token_urlsafe(32)
         payload = _json.dumps({
             "run_id": run_id,
             "vnc_port": vnc_port,
+            "vnc_host": vnc_host,
             "user_id": str(user.user_id or ""),
         })
         await _redis.set(f"vnc:ticket:{ticket}", payload, ex=120)
@@ -1005,6 +1083,10 @@ def create_app(config_path: Optional[Path] = None) -> FastAPI:
             return
 
         vnc_port = entry["vnc_port"]
+        vnc_host = entry.get("vnc_host") or "authrecon-worker"
+        if vnc_host not in VNC_HOSTS:
+            await ws_client.close(code=1008)
+            return
 
         # 3. Accept the client WebSocket immediately so the browser gets its HTTP 101
         #    without waiting for the backend connection. noVNC needs the 101 before it
@@ -1022,7 +1104,7 @@ def create_app(config_path: Optional[Path] = None) -> FastAPI:
         for _attempt in range(10):
             try:
                 ws_backend = await websockets.connect(
-                    f"ws://authrecon-worker:{vnc_port}/websockify",
+                    f"ws://{vnc_host}:{vnc_port}/websockify",
                     subprotocols=["binary"],
                 )
                 break

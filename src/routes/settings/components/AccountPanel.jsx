@@ -5,6 +5,7 @@ import PanelShell from './PanelShell';
 import Badge from '../../../components/Badge';
 import Button from '../../../components/Button';
 import { PasswordChangeModal } from './PasswordChangeModal';
+import { MfaPanel } from './MfaPanel';
 import useAuthStore from '../../../store/authStore';
 import { useChangeOwnPassword } from '../../../services/usePortalUsers';
 
@@ -60,6 +61,8 @@ export function AccountPanel() {
       >
         {successMessage && <p className="text-sm text-emerald-400">{successMessage}</p>}
       </PanelShell>
+
+      <MfaPanel />
 
       <PanelShell
         eyebrow="Access"

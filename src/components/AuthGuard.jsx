@@ -1,5 +1,5 @@
 import React from 'react'
-import { Navigate, Outlet } from 'react-router-dom'
+import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import useAuthStore from '../store/authStore'
 import Layout from './Layout'
 
@@ -9,8 +9,9 @@ import Layout from './Layout'
  * Wraps protected routes with Layout component
  */
 function AuthGuard() {
-  const token = useAuthStore((state) => state.token)
+  const user = useAuthStore((state) => state.user)
   const hasHydrated = useAuthStore((state) => state.hasHydrated)
+  const location = useLocation()
 
   if (!hasHydrated) {
     return (
@@ -25,9 +26,17 @@ function AuthGuard() {
     )
   }
 
-  if (!token) {
+  if (!user) {
     // Redirect to login if not authenticated
     return <Navigate to="/login" replace />
+  }
+
+  // Admins who must set up two-factor first: the server only answers the MFA
+  // endpoints for this session, so keep them on the setup page until it is on.
+  let mustEnrol = false
+  try { mustEnrol = localStorage.getItem('mfa_enroll') === '1' } catch { /* storage blocked */ }
+  if (mustEnrol && !(location.pathname === '/settings' && location.search.includes('tab=account'))) {
+    return <Navigate to="/settings?tab=account" replace />
   }
 
   // Render Layout with nested routes

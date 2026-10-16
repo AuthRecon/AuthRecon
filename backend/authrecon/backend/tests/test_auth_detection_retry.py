@@ -12,6 +12,7 @@ class FakeSession:
         self.outcomes = list(outcomes)
         self.calls = []
         self.headers = {}
+        self.hooks = {"response": []}
 
     def get(self, url, **kwargs):
         self.calls.append((url, kwargs))

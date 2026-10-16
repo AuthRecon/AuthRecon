@@ -21,6 +21,7 @@ import Timeline from './components/Timeline'
 import ArtifactsSection from './components/ArtifactsSection'
 import TechFingerprint from './components/TechFingerprint'
 import WasSetupCard from './components/WasSetupCard'
+import ApprovalBanner from './components/ApprovalBanner'
 import FailureCard from './components/FailureCard'
 import SecurityAnalysis from './components/SecurityAnalysis'
 import HttpFlowViewer from './components/HttpFlowViewer'
@@ -535,6 +536,7 @@ function AuthReconRunDetail() {
         {/* Tab Content */}
         {activeTab === 'overview' && (
           <div className="space-y-6">
+            <ApprovalBanner run={run} onChanged={refetch} />
             {/* What to put in the scanner */}
             {run.was_setup && (
               <WasSetupCard runId={run.id} setup={run.was_setup} onChanged={refetch} />

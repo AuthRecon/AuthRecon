@@ -39,6 +39,12 @@ LICENSE_REVOKED = "license_revoked"
 LOGINLAB_ENABLED = "loginlab_enabled"
 LOGINLAB_DISABLED = "loginlab_disabled"
 SECURITY_NOTICE_ACKNOWLEDGED = "security_notice_acknowledged"
+MFA_ENABLED = "mfa_enabled"
+MFA_DISABLED = "mfa_disabled"
+MFA_FAILURE = "mfa_failure"
+MFA_RESET = "mfa_reset"
+MFA_BACKUP_CODES = "mfa_backup_codes_regenerated"
+MFA_POLICY = "mfa_policy_changed"
 
 
 def emit(

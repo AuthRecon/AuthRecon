@@ -43,6 +43,9 @@ from app.services.automation.navigation import (
 )
 
 from app.services.automation.types import FormAuthResult, RecordedAction, ScreenshotCapture
+from app.services.automation.playwright_guard import harden_playwright_context, launch_chromium
+from app.services.automation.remote_browser import browser_tmp_dir
+from app.services.automation.typing_guard import ensure_safe_to_type
 
 
 async def attempt_oauth_login_playwright(
@@ -105,20 +108,22 @@ async def attempt_oauth_login_playwright(
 
     async with async_playwright() as p:
         # Launch browser with HAR recording
-        har_path = f"/tmp/{run_id}-oauth-network.har"
+        har_path = f"{browser_tmp_dir()}/{run_id}-oauth-network.har"
 
         async def _open_page(disable_http2: bool = False):
             launch_args = ['--disable-blink-features=AutomationControlled']
-            browser = await p.chromium.launch(
+            browser = await launch_chromium(p, 
                 headless=True,
                 args=with_http2_disabled(launch_args) if disable_http2 else launch_args,
             )
             context = await browser.new_context(
+                accept_downloads=False,
                 record_har_path=har_path,
                 record_har_omit_content=False,
                 viewport={'width': 1280, 'height': 800},
                 user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
             )
+            await harden_playwright_context(context)
             page = await context.new_page()
             return browser, context, page
 
@@ -391,6 +396,7 @@ async def _authenticate_google_playwright(
     for selector in password_selectors:
         try:
             await page.wait_for_selector(selector, timeout=10000)
+            ensure_safe_to_type(page.url)
             await page.fill(selector, password)
             events.append("Entered password")
             actions.append(RecordedAction(
@@ -453,6 +459,7 @@ async def _authenticate_github_playwright(
 
     for selector in password_selectors:
         try:
+            ensure_safe_to_type(page.url)
             await page.fill(selector, password)
             events.append("Entered password")
             actions.append(RecordedAction(
@@ -501,6 +508,7 @@ async def _authenticate_linkedin_playwright(
         await page.fill(email_selector, username)
         events.append(f"Entered email: {username}")
 
+        ensure_safe_to_type(page.url)
         await page.fill(password_selector, password)
         events.append("Entered password")
 
@@ -575,6 +583,7 @@ async def _authenticate_generic_oauth_playwright(
     if password_visible:
         # Single-step form
         events.append("Detected single-step OAuth form")
+        ensure_safe_to_type(page.url)
         await page.fill("input[type='password']", password)
         events.append("Entered password")
 
@@ -604,6 +613,7 @@ async def _authenticate_generic_oauth_playwright(
         for selector in password_selectors:
             try:
                 await page.wait_for_selector(selector, timeout=10000)
+                ensure_safe_to_type(page.url)
                 await page.fill(selector, password)
                 events.append("Entered password (step 2)")
                 break

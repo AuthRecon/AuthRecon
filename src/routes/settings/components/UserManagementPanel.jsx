@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { UserPlus, Shield, User as UserIcon, Mail, Calendar, Edit2, Trash2 } from 'lucide-react'
+import { UserPlus, Shield, ShieldOff, User as UserIcon, Mail, Calendar, Edit2, Trash2 } from 'lucide-react'
 import Card from '../../../components/Card'
 import Button from '../../../components/Button'
 import PanelShell from './PanelShell'
@@ -8,6 +8,7 @@ import UserCreateModal from './UserCreateModal'
 import UserEditModal from './UserEditModal'
 import UserDeleteModal from './UserDeleteModal'
 import useAuthStore from '../../../store/authStore'
+import api from '../../../services/api'
 
 function UserManagementPanel() {
   const { data: users = [], isLoading, error } = usePortalUsers()
@@ -130,6 +131,23 @@ function UserManagementPanel() {
                         title="Edit user"
                       >
                         <Edit2 className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        onClick={async () => {
+                          if (!window.confirm(`Turn off two-factor authentication for ${user.username}? They can sign in with their password and set it up again. Use this when they have lost their phone and backup codes.`)) return
+                          try {
+                            await api.post(`/api/auth/mfa/reset/${user.id}`)
+                            alert(`Two-factor authentication is off for ${user.username}.`)
+                          } catch (err) {
+                            alert(err.response?.data?.detail || 'Could not reset two-factor authentication')
+                          }
+                        }}
+                        disabled={isCurrentUser}
+                        className="p-2 rounded-lg border border-slate-700/50 bg-slate-800/50 hover:bg-amber-500/10 hover:border-amber-500/30 text-slate-400 hover:text-amber-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        title={isCurrentUser ? "Use Settings › Account for your own two-factor" : "Reset two-factor authentication"}
+                      >
+                        <ShieldOff className="w-4 h-4" />
                       </button>
 
                       <button

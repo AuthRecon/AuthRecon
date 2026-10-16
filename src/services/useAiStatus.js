@@ -37,6 +37,11 @@ export function useSetMcpEnabled() {
   return useAiMutation(async (enabled) => (await authreconApi.put('ai/mcp', { enabled })).data)
 }
 
+// Admin: runs an AI client starts wait for a person to approve them.
+export function useSetMcpApproval() {
+  return useAiMutation(async (enabled) => (await authreconApi.put('ai/mcp/approval', { enabled })).data)
+}
+
 // Admin: which users may create API/MCP keys.
 export function useApiAccess(enabled) {
   return useQuery({

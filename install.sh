@@ -574,6 +574,7 @@ PORTAL_DB_PASSWORD=$(openssl rand -hex 16)
 AUTHRECON_DB_PASSWORD=$(openssl rand -hex 16)
 REDIS_PASSWORD=$(openssl rand -hex 32)
 LOGINLAB_SERVICE_TOKEN=$(openssl rand -hex 32)
+BROWSER_AGENT_TOKEN=$(openssl rand -hex 32)
 EOF
 
     chmod 600 "${SCRIPT_DIR}/.env.secrets"
@@ -624,6 +625,12 @@ AUTHRECON_DB_PASSWORD=${AUTHRECON_DB_PASSWORD}
 REDIS_PASSWORD=${REDIS_PASSWORD}
 PORTAL_API_SECRET=${PORTAL_API_SECRET}
 LOGINLAB_SERVICE_TOKEN=${LOGINLAB_SERVICE_TOKEN}
+BROWSER_AGENT_TOKEN=${BROWSER_AGENT_TOKEN}
+
+# Browser isolation: run the browsers that visit targets in a separate container
+# without AuthRecon's secrets (ADMIN_GUIDE.md, "Browser isolation"). To turn on:
+# BROWSER_ISOLATION=true
+# COMPOSE_PROFILES=browser-isolation
 EOF
     if [[ ${USE_MIRROR} -eq 1 ]]; then
         cat >> "${SCRIPT_DIR}/.env" <<'EOF'

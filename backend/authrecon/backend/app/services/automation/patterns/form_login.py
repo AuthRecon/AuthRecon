@@ -19,6 +19,7 @@ from ..username_utils import get_username_variants
 from ..pre_run_discovery import discover_auth_elements
 from ..pre_run_discovery_click_reveal import _click_reveal_elements
 from ..security_context_extractor import extract_security_context
+from app.services.automation.typing_guard import ensure_safe_to_type
 
 # Auth-related keywords (multi-lingual) to improve field detection without manual hints
 AUTH_KEYWORDS = [
@@ -299,6 +300,7 @@ def run_form_login(
                 password_field = _locate_password_field(driver)
             if password_field is None:
                 raise RuntimeError("Unable to locate a password field on the login page.")
+        ensure_safe_to_type(driver.current_url)
         _clear_and_type(password_field, password)
         events.append("Populated password field.")
         password_selector = _selector_for_element(driver, password_field)

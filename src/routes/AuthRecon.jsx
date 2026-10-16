@@ -49,7 +49,7 @@ function AuthRecon() {
       setPollingEnabled(false)
       return
     }
-    const hasActiveRun = runs.some((run) => run.status === 'queued' || run.status === 'running')
+    const hasActiveRun = runs.some((run) => (run.status === 'queued' && !run.awaiting_approval) || run.status === 'running')
     if (hasActiveRun !== pollingEnabled) {
       setPollingEnabled(hasActiveRun)
     }
@@ -200,8 +200,8 @@ function AuthRecon() {
                   </div>
                   <div className="flex flex-col">
                     <p className="text-sm text-slate-500">Status</p>
-                    <Badge variant={run.status === 'succeeded' ? 'success' : run.status === 'failed' ? 'error' : 'default'}>
-                      {run.status}
+                    <Badge variant={run.awaiting_approval ? 'warning' : run.status === 'succeeded' ? 'success' : run.status === 'failed' ? 'error' : 'default'}>
+                      {run.awaiting_approval ? 'awaiting approval' : run.status}
                     </Badge>
                   </div>
                   <div className="flex flex-col">

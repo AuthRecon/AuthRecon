@@ -110,6 +110,8 @@ class RunSummary(BaseModel):
     ai_assisted: bool = False
     # Problems on an otherwise successful run (e.g. some roles failed).
     warnings: list[str] = Field(default_factory=list)
+    # Started by an AI client (MCP) and held until a person approves it.
+    awaiting_approval: bool = False
 
 
 class RunRoleSummary(BaseModel):

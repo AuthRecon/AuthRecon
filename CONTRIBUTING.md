@@ -6,13 +6,17 @@ Bug reports and ideas are welcome as [GitHub Issues](https://github.com/AuthReco
 
 ```
 src/                              React 18 + Vite + Tailwind UI (plain JSX)
-backend/security-portal/          Portal: login, sessions, gateway/proxy, LoginLab control, audit log
+backend/security-portal/          Portal: login, two-factor, session cookies, gateway/proxy, LoginLab control, audit log
 backend/authrecon/backend/        authrecon-api and authrecon-worker (FastAPI, RQ, Alembic)
   app/worker.py                   run pipeline and per-login-type dispatch
   app/services/auth_detection.py  login-type detection (+ scoring.py)
   app/services/automation/        login patterns (patterns/), pre-run discovery, AI-suggestion sanitizer
   app/services/side_files.py      builds the .side scripts
   app/services/side_replay.py     "Verify": replays a .side in a clean browser
+  app/services/scan_readiness.py  per-run scan readiness grade and starting WAS settings
+  app/services/scan_analysis.py   Scan Analyzer rules for uploaded WAS exports (+ scan_export_parser.py)
+  app/services/target_guard.py    which targets may be visited; credential_domains.py binds credentials to hosts
+  browser_agent/                  agent for the isolated browser container (BROWSER_ISOLATION)
   alembic/versions/               database migrations
 backend/authrecon/cli/            `authrecon` CLI
 backend/authrecon-mcp/            MCP server (separate service, reached through the portal)
@@ -41,9 +45,9 @@ Things to know:
 (cd backend/authrecon/backend && python -m pytest tests)
 (cd backend/security-portal  && python -m pytest tests)
 (cd backend/authrecon-mcp    && python -m pytest tests)
-npm ci && npm run build
+npm ci && npm test && npm run build
 ```
-CI (`.github/workflows/tests.yml`) runs the same steps. The unit tests use SQLite and mocks: no browsers, no Docker. Anything touching login automation also needs a real run against LoginLab, then **Verify** on the resulting `.side`. A `.side` that doesn't replay in a clean browser doesn't work in WAS.
+CI (`.github/workflows/tests.yml`) runs the same steps, plus `pip-audit`, `npm audit` and a gitleaks secret scan. Regenerate `package-lock.json` with npm 11 or later; npm 10 can write a lockfile that `npm ci` then rejects. The unit tests use SQLite and mocks: no browsers, no Docker. Anything touching login automation also needs a real run against LoginLab, then **Verify** on the resulting `.side`. A `.side` that doesn't replay in a clean browser doesn't work in WAS.
 
 ## Adding a login type
 
@@ -54,10 +58,14 @@ CI (`.github/workflows/tests.yml`) runs the same steps. The unit tests use SQLit
 5. **Tests:** cover the detection and the `.side` steps.
 
 Security rules for any change:
+- **Before typing or posting a password,** call `ensure_safe_to_type(<current page URL>)` (`services/automation/typing_guard.py`). It stops the run if the login landed on a host the credential is not allowed on.
+- **Create browsers only through** `create_webdriver()` (Selenium) and `launch_chromium()` + `harden_playwright_context()` (Playwright): they block requests to AuthRecon's own services and cloud metadata, deny downloads, and start the browser in the isolated container when browser isolation is on. Files a browser writes (HAR captures) go under `browser_tmp_dir()`, which that container shares.
+- **New ways to reach a URL** (an HTTP client, a redirect follower) must check it with `services/target_guard.py`.
 - Never put credentials, cookies or tokens in logs, timeline events or HARs.
 - Every endpoint checks auth plus owner-or-admin. Add a cross-user test.
 - Fail closed on missing secrets.
 - Keep LoginLab loopback-only.
+- **UI:** never store a token in `localStorage` or return one in a response to a browser session; the session is an HttpOnly cookie. No inline scripts or third-party hosts (the UI runs under a strict CSP).
 
 ## Releasing
 

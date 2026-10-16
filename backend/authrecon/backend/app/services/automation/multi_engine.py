@@ -67,6 +67,8 @@ import os
 import logging
 from typing import Dict, List, Any
 from datetime import datetime, timezone
+from app.services.automation.playwright_guard import harden_playwright_context, launch_chromium
+from app.services.automation.remote_browser import browser_tmp_dir
 
 logger = logging.getLogger(__name__)
 
@@ -126,10 +128,10 @@ async def capture_playwright_har_post_auth(
 
         logger.info(f"Starting Playwright HAR capture for {run_id}")
 
-        har_path = Path(tempfile.gettempdir()) / f"{run_id}-playwright-post-auth.har"
+        har_path = Path(browser_tmp_dir()) / f"{run_id}-playwright-post-auth.har"
 
         async with async_playwright() as p:
-            browser = await p.chromium.launch(
+            browser = await launch_chromium(p, 
                 headless=True,
                 args=[]
             )
@@ -137,12 +139,14 @@ async def capture_playwright_har_post_auth(
             try:
                 # Create context with HAR recording
                 context = await browser.new_context(
+                    accept_downloads=False,
                     record_har_path=str(har_path),
                     record_har_omit_content=False,  # Include bodies
                     record_har_mode='minimal',  # Skip large static assets
                     ignore_https_errors=True,
                     user_agent='AuthRecon/1.0 (Playwright HAR Capture)',
                 )
+                await harden_playwright_context(context)
 
                 # Set Selenium's cookies
                 playwright_cookies = []

@@ -80,6 +80,25 @@ class AuthDetectionResult:
         }
 
 
+class BlockedRedirect(requests.exceptions.InvalidURL):
+    """A redirect pointed at an address the target guard refuses."""
+
+
+def _guard_redirects(response: requests.Response, *args, **kwargs) -> None:
+    """requests response hook: check each redirect hop before it is followed, so a
+    target cannot bounce detection to cloud metadata or AuthRecon's own services."""
+    if response.is_redirect:
+        from urllib.parse import urljoin
+
+        from app.services.target_guard import TargetBlocked, check_target
+
+        next_url = urljoin(response.url, response.headers.get("location") or "")
+        try:
+            check_target(next_url)
+        except TargetBlocked as exc:
+            raise BlockedRedirect(f"Redirect to a blocked address refused: {exc}") from None
+
+
 def _get_with_timeout_retry(
     session: requests.Session,
     url: str,
@@ -124,6 +143,7 @@ def detect_auth_type(
     """
     session = requests.Session()
     session.headers.update({"User-Agent": USER_AGENT})
+    session.hooks["response"].append(_guard_redirects)
     signals: list[dict[str, str]] = []
     hint_decision = match_hint(login_hint)
     if hint_decision:

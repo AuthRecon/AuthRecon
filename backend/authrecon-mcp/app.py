@@ -33,6 +33,7 @@ from typing import Any, Callable
 
 import httpx
 from mcp.server.mcpserver import Context, MCPServer
+from mcp.server.mcpserver.exceptions import ToolError
 from mcp.server.transport_security import TransportSecuritySettings
 
 AUTHRECON_API_URL = os.getenv("AUTHRECON_API_URL", "http://authrecon-api:8000/api/v1").rstrip("/")
@@ -133,7 +134,9 @@ def _raise_for_status(resp: httpx.Response) -> None:
             detail = resp.json().get("detail", detail)
         except Exception:
             pass
-        raise RuntimeError(f"AuthRecon API error ({resp.status_code}): {detail}")
+        # ToolError: the client sees this message (e.g. "This API key is read-only")
+        # instead of the SDK's generic "Error executing tool".
+        raise ToolError(f"AuthRecon API error ({resp.status_code}): {detail}")
 
 
 # --- Review job history -----------------------------------------------------
@@ -232,14 +235,16 @@ async def list_credentials(ctx: Context) -> list[dict[str, Any]]:
     """
     List the credentials you have saved in AuthRecon, to pass to submit_run().
 
-    Returns the id, name, description, auth type and last-used time only:
-    never the username or the secret.
+    Returns the id, name, description, auth type, last-used time and the
+    domains each credential may be used on (allowed_domains; a run against any
+    other host is refused, and an empty list means it binds to the first run's
+    host). Never the username or the secret.
     """
     async with _client(ctx) as client:
         resp = await client.get("/credentials")
         _raise_for_status(resp)
         rows = resp.json()
-    keep = ("id", "name", "description", "auth_type", "last_used_at", "is_archived")
+    keep = ("id", "name", "description", "auth_type", "last_used_at", "is_archived", "allowed_domains")
     return [{k: row.get(k) for k in keep} for row in rows if not row.get("is_archived")]
 
 
@@ -544,9 +549,11 @@ async def list_scan_exports(ctx: Context, limit: int = 20) -> list[dict[str, Any
 @mcp.tool()
 async def get_scan_export_summary(ctx: Context, export_id: str) -> dict[str, Any]:
     """
-    Get the parsed summary of one uploaded WAS scan export: file inventory
-    today; scan findings once the analyzer's parser is built. Never includes
-    file contents, credentials or the raw zip.
+    Get the analysis of one uploaded WAS scan export: summary.analysis holds
+    what went wrong (recommendations, most severe first, with evidence) and the
+    setting changes grouped by WAS configuration section (current -> new when
+    the export included the scan's settings). Never includes plugin output,
+    query strings, credentials or the raw upload.
     """
     async with _client(ctx) as client:
         resp = await client.get(f"/scan-exports/{export_id}")

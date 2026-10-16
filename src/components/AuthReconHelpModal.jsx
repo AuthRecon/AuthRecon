@@ -159,7 +159,11 @@ export default function AuthReconHelpModal({ isOpen, onClose }) {
 
               <div>
                 <p className="font-medium text-slate-200 mb-1">🎯 Tenable WAS Setup</p>
-                <p className="text-slate-400">The run page opens with the values WAS needs: login page, page to verify, the pattern-to-verify regex and the .side script. Click <span className="text-cyan-400">Verify</span> to replay the script in a clean browser the way the scanner will (this counts as one more login on the account), then download the .side for your scan's Selenium authentication settings.</p>
+                <p className="text-slate-400">The run page opens with the values WAS needs: login page, page to verify, the pattern-to-verify regex and the .side script. Click <span className="text-cyan-400">Verify</span> to replay the script in a clean browser the way the scanner will (this counts as one more login on the account), then download the .side for your scan's Selenium authentication settings. Below it, <span className="text-cyan-400">Scan readiness</span> grades how well the login will scan and suggests starting scan settings (URLs to exclude, the session cookie, performance tweaks).</p>
+              </div>
+              <div>
+                <p className="font-medium text-slate-200 mb-1">🩺 After a scan</p>
+                <p className="text-slate-400">If a WAS scan failed or came back thin, upload its debug .zip or JSON export to the <span className="text-cyan-400">Scan Analyzer</span> (preview). It explains what went wrong and which settings to change.</p>
               </div>
 
               <div>

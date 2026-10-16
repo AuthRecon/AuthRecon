@@ -1,97 +1,34 @@
-import axios from 'axios'
 import api from './api'
-import config from '../config'
 
-const AUTHRECON_ACCESS_TOKEN_KEY = 'authrecon_access_token'
-const AUTHRECON_ACCESS_EXPIRES_KEY = 'authrecon_access_expires_at'
-const TOKEN_EXPIRY_BUFFER_MS = 60 * 1000 // refresh 1 minute before expiry
+// AuthRecon's API token is an HttpOnly cookie (ar_api) the portal sets on
+// POST /api/auth/authrecon-session and turns into the Authorization header when
+// proxying /apps/authrecon/api. Only its expiry is kept here, to know when to
+// ask again.
+const AUTHRECON_SESSION_EXPIRES_KEY = 'authrecon_session_expires_at'
+const EXPIRY_BUFFER_MS = 60 * 1000 // renew 1 minute before expiry
 
-const sanitizeBaseUrl = (value) => {
-  if (!value) return ''
-  return value.replace(/\/+$/, '')
+const sessionIsFresh = () => {
+  const expiresAt = new Date(localStorage.getItem(AUTHRECON_SESSION_EXPIRES_KEY) || '').getTime()
+  return !Number.isNaN(expiresAt) && Date.now() < expiresAt - EXPIRY_BUFFER_MS
 }
 
-const AUTHRECON_BASE_URL = sanitizeBaseUrl(config.api.authrecon) || 'http://localhost:9000/apps/authrecon/api/v1'
-
-const authClient = axios.create({
-  baseURL: AUTHRECON_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  timeout: 30000,
-})
-
-const getStoredToken = () => {
-  const token = localStorage.getItem(AUTHRECON_ACCESS_TOKEN_KEY)
-  const expiresAt = localStorage.getItem(AUTHRECON_ACCESS_EXPIRES_KEY)
-  if (!token || !expiresAt) {
-    return null
-  }
-  const expires = new Date(expiresAt).getTime()
-  if (Number.isNaN(expires)) {
-    return null
-  }
-  if (Date.now() >= expires - TOKEN_EXPIRY_BUFFER_MS) {
-    return null
-  }
-  return { token, expiresAt }
+export const clearAuthReconSession = () => {
+  localStorage.removeItem(AUTHRECON_SESSION_EXPIRES_KEY)
 }
 
-const storeToken = (token, expiresAt) => {
-  if (token) {
-    localStorage.setItem(AUTHRECON_ACCESS_TOKEN_KEY, token)
-  } else {
-    localStorage.removeItem(AUTHRECON_ACCESS_TOKEN_KEY)
+let pending = null
+
+export const ensureAuthReconSession = async () => {
+  if (sessionIsFresh()) return
+  if (!pending) {
+    pending = api
+      .post('/api/auth/authrecon-session')
+      .then((response) => {
+        localStorage.setItem(AUTHRECON_SESSION_EXPIRES_KEY, response.data?.expires_at || '')
+      })
+      .finally(() => {
+        pending = null
+      })
   }
-  if (expiresAt) {
-    localStorage.setItem(AUTHRECON_ACCESS_EXPIRES_KEY, expiresAt)
-  } else {
-    localStorage.removeItem(AUTHRECON_ACCESS_EXPIRES_KEY)
-  }
-}
-
-export const clearAuthReconToken = () => {
-  storeToken(null, null)
-}
-
-let acquiringTokenPromise = null
-
-const fetchNewAccessToken = async () => {
-  // Step 1: ask portal for a service token scoped to AuthRecon
-  const serviceResponse = await api.post('/api/tools/auth_recon/service-token')
-  const portalToken = serviceResponse.data?.token
-  if (!portalToken) {
-    throw new Error('Portal did not return a service token for AuthRecon')
-  }
-
-  // Step 2: exchange for AuthRecon API access token
-  // NOTE: Must use 'api' (portal client with auth headers), not 'authClient'
-  // because the portal proxy requires portal authentication
-  const authResponse = await api.post('/apps/authrecon/api/v1/auth/portal-login', {
-    token: portalToken,
-  })
-
-  const accessToken = authResponse.data?.access_token
-  const expiresAt = authResponse.data?.expires_at
-  if (!accessToken) {
-    throw new Error('AuthRecon API did not return an access token')
-  }
-
-  storeToken(accessToken, expiresAt || '')
-  return accessToken
-}
-
-export const ensureAuthReconAccessToken = async () => {
-  const existing = getStoredToken()
-  if (existing) {
-    return existing.token
-  }
-
-  if (!acquiringTokenPromise) {
-    acquiringTokenPromise = fetchNewAccessToken().finally(() => {
-      acquiringTokenPromise = null
-    })
-  }
-
-  return acquiringTokenPromise
+  await pending
 }

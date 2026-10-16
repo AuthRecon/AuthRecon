@@ -80,6 +80,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && playwright install chromium
 
 COPY app ./app
+COPY browser_agent ./browser_agent
 COPY alembic.ini .
 COPY alembic ./alembic
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
@@ -96,8 +97,8 @@ RUN chmod +x ./docker-entrypoint.sh
 # Create non-root runtime user. Chrome's sandbox requires non-root — this is the O5 fix.
 # uid=1000 matches the host developer uid so bind-mounted app code is accessible.
 RUN useradd --create-home --uid 1000 --shell /bin/bash authrecon \
-    && mkdir -p /app/data/artifacts \
-    && chown -R authrecon:authrecon /opt/playwright-browsers /app
+    && mkdir -p /app/data/artifacts /tmp/browser-share \
+    && chown -R authrecon:authrecon /opt/playwright-browsers /app /tmp/browser-share
 
 USER authrecon
 

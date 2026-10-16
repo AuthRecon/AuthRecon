@@ -18,8 +18,8 @@ export function useApiKeys() {
 export function useCreateApiKey() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ name, expires_days }) =>
-      (await authreconApi.post('api-keys', { name, expires_days })).data,
+    mutationFn: async ({ name, expires_days, scope = 'full' }) =>
+      (await authreconApi.post('api-keys', { name, expires_days, scope })).data,
     onSuccess: () => invalidate(queryClient),
   });
 }

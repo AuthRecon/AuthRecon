@@ -52,4 +52,8 @@ def get_vnc_info(
     if not run.vnc_port:
         raise HTTPException(status_code=404, detail="No active VNC session for this run")
 
-    return {"vnc_port": run.vnc_port, "run_id": run_id}
+    # With browser isolation the live view runs in the browser container.
+    from app.services.automation.remote_browser import isolation_enabled
+
+    vnc_host = "authrecon-browser" if isolation_enabled() else "authrecon-worker"
+    return {"vnc_port": run.vnc_port, "vnc_host": vnc_host, "run_id": run_id}

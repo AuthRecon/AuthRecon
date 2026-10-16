@@ -80,7 +80,13 @@ docker compose up -d --build   # migrations run when the worker restarts
 docker compose logs authrecon-worker | grep -i "alembic\|listening"
 ```
 
-Never run `docker compose down -v`: it deletes the database and artifact volumes.
+Never run `docker compose down -v`: it deletes the database and artifact volumes. Take a [database dump](#back-up) before upgrading.
+
+**Upgrading to 0.11:**
+- Everyone is signed out once: sessions moved from browser storage to an HttpOnly cookie. Users sign in again; nothing else changes for them.
+- Two migrations run at worker start. Existing stored credentials have no domain list yet: each is bound to the host of the next run that uses it, or set its domains first ([Stored credentials](#stored-credentials-and-their-domains)). Existing API keys keep full access; new keys can be read-only.
+- The UI and the portal must be on the same host name (see [Network exposure](#network-exposure)); installs made with `install.sh` already are.
+- Browser isolation is new and off by default; [turn it on](#browser-isolation-recommended) after the upgrade if you want it.
 
 ## Back up
 
@@ -107,11 +113,12 @@ Encrypted data can't be read back without the matching secrets, so keep secrets 
 | `AUTHRECON_JWT_SECRET` → `JWT_SECRET_KEY` | authrecon-api | The API's own tokens. |
 | `PORTAL_API_SECRET` | portal, authrecon-api, worker | Service-to-service auth. Must be identical everywhere. |
 | `LOGINLAB_SERVICE_TOKEN` | portal, loginlab | LoginLab's own token, kept separate from the service secret on purpose. |
+| `BROWSER_AGENT_TOKEN` | authrecon-browser, authrecon-api, worker | Lets the worker and API start browsers in the isolated browser container. Used only with browser isolation on. |
 | `*_DB_PASSWORD`, `POSTGRES_SUPERUSER_PASSWORD`, `REDIS_PASSWORD` | database, cache | |
 
 Every service refuses to start if a required secret is missing.
 
-**Rotating** a signing secret, `PORTAL_API_SECRET`, `LOGINLAB_SERVICE_TOKEN` or the Redis password:
+**Rotating** a signing secret, `PORTAL_API_SECRET`, `LOGINLAB_SERVICE_TOKEN`, `BROWSER_AGENT_TOKEN` or the Redis password:
 1. Generate a value with `openssl rand -hex 32`.
 2. Update it in `.env.secrets` and in every `.env` that contains it (`grep -l NAME .env backend/*/.env backend/authrecon/backend/.env`).
 3. Apply it with `docker compose up -d`. A `restart` would keep the old environment.
@@ -120,17 +127,52 @@ Every service refuses to start if a required secret is missing.
 
 ## Network exposure
 
-- Put the UI (5173) and portal (9000) behind your reverse proxy or firewall like any internal web app.
+- Put the UI (5173) and portal (9000) behind your reverse proxy or firewall like any internal web app. Serve both from the same host name (the installer does): the sign-in is an HttpOnly cookie restricted to the same site, so a UI at `https://authrecon.example.com` with the portal at another domain cannot sign in. Behind a TLS proxy the cookies are marked `Secure` automatically when the proxy sends `X-Forwarded-Proto: https`; set `SESSION_COOKIE_SECURE=true` in `backend/security-portal/.env` to force it.
 - **Port 8001 (authrecon-api) is published on all interfaces** so the CLI and scripts can reach it. Requests on that port still need a valid API key or token, but they skip the portal layer (its per-request user checks and audit trail). Allow it with a host or network firewall only from hosts that need CLI access, or block it if nobody uses the CLI.
 - LoginLab binds to `127.0.0.1` only. It is intentionally vulnerable, so never publish it.
-- The MCP server and VNC live views publish no ports; they're reached only through the portal.
+- The MCP server and VNC live views publish no ports; they're reached only through the portal. The isolated browser container (`authrecon-browser`) publishes none either.
+
+## Which targets AuthRecon may visit
+
+AuthRecon loads, renders and screenshots whatever target it is given, from inside the Docker network that also holds its database and services. So it refuses some targets:
+- cloud metadata addresses (`169.254.169.254` and similar), loopback, link-local and reserved addresses;
+- AuthRecon's own services (`postgres`, `redis`, `portal`, `authrecon-api`, ...) and any address on its internal Docker network;
+- the Docker host (`host.docker.internal`).
+
+This is checked when a run is submitted, again when it starts (DNS can change in between), on every redirect during detection, and inside the browser for every request a page makes. Private ranges (10/8, 172.16/12, 192.168/16) stay allowed, because scanning internal applications is the main use. Adjust with these variables in `backend/authrecon/backend/.env`, then `docker compose up -d`:
+
+| Variable | Effect |
+|---|---|
+| `TARGET_ALLOW` | Comma-separated hosts or CIDRs that are always allowed, e.g. `host.docker.internal` for an app running on the Docker host, or `10.20.0.0/16`. |
+| `TARGET_DENY` | Comma-separated hosts or CIDRs that are always refused. |
+| `TARGET_BLOCK_PRIVATE` | `true` to also refuse private addresses (internet-facing targets only). |
+
+## Browser isolation (recommended)
+
+By default the browsers that visit target sites run inside the worker and API containers, which also hold AuthRecon's master key and database access. With browser isolation on, every such browser (automated runs, detection, Verify, HAR capture, the Playwright engine, the live view and manual recording) runs in a separate `authrecon-browser` container instead:
+- it holds no AuthRecon secrets, only its own agent token;
+- it is on its own network with the worker, the API, LoginLab and the portal (which proxies the live view), and cannot reach Postgres, Redis or the MCP server. It can reach the portal's sign-in page, as any machine on your network can;
+- the worker and API drive its browsers over WebDriver and Playwright, and the live view's display and VNC server run there too, so runs, screenshots, HAR, Verify, patterns, the live view and manual recording work the same.
+
+Turn it on in `.env` (new installs already have `BROWSER_AGENT_TOKEN`; on an older install add one with `openssl rand -hex 32`):
+```bash
+BROWSER_ISOLATION=true
+COMPOSE_PROFILES=browser-isolation
+```
+then `docker compose up -d --build`.
+
+## Stored credentials and their domains
+
+Each stored credential lists the domains it may be used on (**New Run › Saved credential › Edit domains**): `app.example.com`, or `*.example.com` for a domain and its subdomains. A run against any other host is refused, including runs an AI client starts. A credential with no domains is bound to the host of the first run that uses it.
+
+During a run the worker also checks the page before typing a password. It types only on the target's own domain, the credential's allowed domains and well-known identity providers (Microsoft, Okta, Google, Auth0, Ping, OneLogin, ...). A login that redirects anywhere else stops with an error instead of handing over the password. If a legitimate login uses another host (for example a company ADFS server on a different domain), add that host to the credential's domains.
 
 ## HTTPS
 
 Terminate TLS at a reverse proxy (nginx, Caddy, ...) in front of ports 5173 and 9000. Then:
 1. Set the `VITE_*` URLs in `.env` to the `https://` / `wss://` addresses.
 2. Set `ALLOWED_ORIGINS` in `backend/security-portal/.env` and in `backend/authrecon/backend/.env` to the HTTPS UI origin.
-3. Rebuild the frontend, because the URLs are compiled into it: `docker compose up -d --build frontend && docker compose up -d`.
+3. Rebuild the frontend, because the URLs are compiled into it (and into its Content-Security-Policy, which only lets the UI connect to those addresses): `docker compose up -d --build frontend && docker compose up -d`.
 
 MCP clients on other machines send their API key on every request, so give them HTTPS.
 
@@ -140,12 +182,26 @@ MCP clients on other machines send their API key on every request, so give them 
 - API keys (for the CLI and AI clients) are created in **Settings › AI & MCP**. Admins can always create keys; an admin decides who else can. Keys are shown once, are stored hashed, and can be given an expiry or revoked at any time.
 - A new user sees a short security notice that must be acknowledged, again every 7 days.
 
+### Two-factor authentication
+
+- Each user turns it on in **Settings › Account › Two-factor authentication**: scan the QR code with an authenticator app (Microsoft or Google Authenticator, 1Password, 2FAS, ...), enter a code, and save the 10 backup codes shown once. Sign-in then asks for a code after the password; a backup code works once in place of a code.
+- The app lists the entry as **AuthRecon** with the part of the username before the @ (`jane.doe`, not the full email), so apps that guess a logo from the text don't show another company's. Most apps show a plain text badge (e.g. "AU") because AuthRecon has no logo in their catalogue; the app can rename it.
+- **Require it for admins:** an admin with two-factor on can tick *Require two-factor for all administrators* in the same section. Other admins without it then reach only the setup page at their next sign-in, until they turn it on.
+- **Lost phone:** another admin resets it with the shield button in **Settings › User Management**; the user signs in with their password and sets it up again. Every change is in the audit log.
+- **The only admin lost both the phone and the backup codes:** turn it off from the server, then sign in with the password and set it up again:
+  ```bash
+  docker compose exec -T postgres psql -U postgres -d portal \
+    -c "DELETE FROM user_mfa WHERE user_id = (SELECT id FROM portal_users WHERE username = 'admin@example.com')"
+  ```
+
 ## AI & MCP
 
 All of it is configured in **Settings › AI & MCP**; nothing goes in `.env`.
 - MCP is **off** until an admin switches it on. While off, every client gets a 403. Changes apply within about 10 seconds.
 - Each client authenticates with its own user's API key, acts as that user and sees only that user's data. Revoking the key cuts the client off.
 - Rate limit: 120 requests per minute per key (`MCP_RATE_LIMIT_PER_MINUTE` on `authrecon-mcp`).
+- **Read-only keys:** tick *Read-only* when creating a key. The client can list and read runs, WAS setup and exports, but every write is refused.
+- **Approval:** *Runs started by AI clients need approval* (admin) holds every MCP-submitted run on its run page until a person approves or rejects it in the web UI.
 - 19 tools: list and inspect runs, timelines and artifacts; detect a login type; list stored credentials (labels only); submit, wait for, cancel and rerun runs; get the WAS settings and run Verify; get sanitized context for a stuck run and submit a selector suggestion; manage playbooks; list and summarize scan exports.
 - What the AI can and can't see: [SECURITY.md](./SECURITY.md#ai-and-mcp).
 
@@ -167,6 +223,12 @@ authrecon runs create --target https://app.example.com/login --username alice   
 authrecon api-keys list | create --name CI --expires-days 30 | revoke <id>
 ```
 Config is stored in `~/.authrecon/config.yaml`. In CI, read the password from a secret variable (`--password "$TEST_PASSWORD"`) instead of typing it on the command line.
+
+## Scan readiness and the Scan Analyzer
+
+- **Scan readiness** (bottom of a run's Tenable WAS card) grades a successful login for scanning and suggests starting settings named as in the WAS scan configuration. It comes from one login, so treat it as a starting point.
+- **Scan Analyzer** (*preview*): after a scan, upload its debug `.zip` and/or its `.json` export (WAS: export the scan). The JSON includes the scan's own settings, so suggestions show current → new values. It reads Tenable's diagnostic plugins (authentication, logouts, timeouts, WAF, sitemap reasons, plugin telemetry) and lists the changes to make. The rules have not yet been tuned on many real exports; review its suggestions before applying them. **Re-analyze** re-reads a stored export after an AuthRecon upgrade.
+- Neither needs an AI client. An MCP client can read the same analysis (`get_scan_export_summary`, `get_was_setup`); it never includes plugin output, query strings or credentials.
 
 ## Playbooks
 
@@ -199,10 +261,15 @@ docker compose exec postgres psql -U postgres -c "DROP DATABASE IF EXISTS secbot
 | A service won't start | `docker compose ps`, then `docker compose logs <service>`. A "Set X in .env" error means a secret is missing. |
 | Run stays *queued* | `docker compose logs --tail=50 authrecon-worker`. The worker must log `Listening on runs`. Then `docker compose up -d authrecon-worker`. |
 | Run fails | Open the run page. The failure card and the timeline (filter by *error*) show where it stopped, and the screenshots show what the browser saw. |
-| Target unreachable | The worker resolves names from inside Docker; for a host on the Docker host use `host.docker.internal`. |
+| Target unreachable | The worker resolves names from inside Docker. For an app on the Docker host use `host.docker.internal` and allow it with `TARGET_ALLOW` (see [Which targets](#which-targets-authrecon-may-visit)). |
+| "This target is not allowed" | The target guard refused it; see [Which targets](#which-targets-authrecon-may-visit). |
+| "Stopped before entering the password" | The login form was on a host the credential is not allowed on. Add the host to the credential's domains if it is legitimate. |
 | `.side` fails in WAS | Click **Verify** on the run page. It replays the script in a clean browser and reports the step that broke. |
 | Run keeps failing with stale selectors | Clear that domain's playbooks (see [Playbooks](#playbooks)). |
-| UI loads but API calls fail | The `VITE_*` URLs in `.env` and `ALLOWED_ORIGINS` must match the address you're browsing; rebuild the frontend after changing them. |
+| Signed out again right after signing in | The sign-in cookie is not reaching the portal: the UI and the portal must use the same host name, and the address you browse must match the `VITE_*` URLs. Over plain HTTP, don't set `SESSION_COOKIE_SECURE=true`. |
+| A script gets `403 Missing X-Requested-With header` | It sent the browser's session cookie. Scripts should use `Authorization: Bearer <token>` or an API key instead. |
+| Runs fail with "the browser container (authrecon-browser) is not reachable" | `BROWSER_ISOLATION=true` is set but the container isn't running: add `COMPOSE_PROFILES=browser-isolation` to `.env` and run `docker compose up -d`. |
+| UI loads but API calls fail | The `VITE_*` URLs in `.env` and `ALLOWED_ORIGINS` must match the address you're browsing; rebuild the frontend after changing them. A browser console message about *Content Security Policy* means the same: the UI was built for another address. |
 | CLI says "API access not enabled" | An admin must allow your user under **Settings › AI & MCP › Who can create keys**. |
 
 Logs: `docker compose logs -f portal authrecon-api authrecon-worker authrecon-mcp`.

@@ -1,4 +1,9 @@
-"""Portal auth helpers: JWT bearer tokens (the React frontend sends ``Authorization: Bearer``)."""
+"""Portal auth helpers: JWT session tokens.
+
+The web UI's session is an HttpOnly cookie (SESSION_COOKIE), so page scripts
+never see a token; requests authenticated by that cookie must also carry
+CSRF_HEADER, which a cross-site form or request cannot add without passing
+CORS. Scripts and tests may still send ``Authorization: Bearer``."""
 from __future__ import annotations
 
 import os
@@ -8,7 +13,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Callable, Optional
 
-from fastapi import Depends, HTTPException, Request
+from fastapi import Depends, HTTPException, Request, Response
 import jwt
 import redis as _redis_sync
 
@@ -118,8 +123,12 @@ class SessionUser:
 
 # JWT Token Functions (for React API authentication)
 
-def create_jwt_token(username: str, is_admin: bool = False, user_id: str | None = None) -> str:
-    """Create a JWT token for API authentication."""
+def create_jwt_token(username: str, is_admin: bool = False, user_id: str | None = None,
+                     mfa_enroll: bool = False) -> str:
+    """Create a JWT token for API authentication.
+
+    ``mfa_enroll``: the account must set up MFA first; the token is accepted only
+    by the MFA endpoints (MFA_ENROLL_PATHS) until it does (see mfa.py)."""
     expiration = datetime.utcnow() + timedelta(hours=JWT_EXPIRATION_HOURS)
     payload = {
         "username": username,
@@ -130,7 +139,39 @@ def create_jwt_token(username: str, is_admin: bool = False, user_id: str | None 
         "exp": expiration,
         "iat": datetime.utcnow(),
     }
+    if mfa_enroll:
+        payload["mfa_enroll"] = True
     return jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
+
+
+MFA_PENDING_TTL_SECONDS = 300
+# Paths an MFA-enrollment-only session may use (everything else answers 403).
+MFA_ENROLL_PATHS = ("/api/auth/mfa", "/api/auth/me", "/api/auth/logout", "/api/auth/status")
+
+
+def create_mfa_pending_token(username: str, user_id: str) -> str:
+    """Proof that the password step passed; exchanged for a session at
+    /api/auth/mfa/verify. Never accepted as a session (session_user_from_payload)."""
+    now = datetime.utcnow()
+    payload = {
+        "typ": "mfa_pending",
+        "username": username,
+        "user_id": user_id,
+        "jti": str(uuid.uuid4()),
+        "exp": now + timedelta(seconds=MFA_PENDING_TTL_SECONDS),
+        "iat": now,
+    }
+    return jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
+
+
+def decode_mfa_pending_token(token: str) -> dict:
+    try:
+        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Sign-in expired. Enter your password again.") from None
+    if payload.get("typ") != "mfa_pending" or is_jti_revoked(payload.get("jti") or ""):
+        raise HTTPException(status_code=401, detail="Sign-in expired. Enter your password again.")
+    return payload
 
 
 def decode_jwt_token(token: str) -> dict:
@@ -163,9 +204,16 @@ def configure_user_lookup(lookup: Optional[Callable[[str], Optional[dict]]]) -> 
     _user_lookup = lookup
 
 
-def session_user_from_payload(payload: dict) -> SessionUser:
+def session_user_from_payload(payload: dict, path: str | None = None) -> SessionUser:
     """Build the request's user from a verified token payload, using the
-    current DB record (not the token's copy) for status and admin rights."""
+    current DB record (not the token's copy) for status and admin rights.
+
+    Only session tokens qualify: an MFA-pending token (password step only) is
+    refused, and an MFA-enrollment session only reaches the MFA endpoints."""
+    if payload.get("typ") not in (None, "session"):
+        raise HTTPException(status_code=401, detail="Invalid token")
+    if payload.get("mfa_enroll") and not (path and path.startswith(MFA_ENROLL_PATHS)):
+        raise HTTPException(status_code=403, detail="Set up two-factor authentication to continue.")
     username = payload.get("username")
     user_id = payload.get("user_id")
     is_admin = bool(payload.get("is_admin", False))
@@ -180,12 +228,71 @@ def session_user_from_payload(payload: dict) -> SessionUser:
     return SessionUser(username=username, is_admin=is_admin, user_id=user_id)
 
 
-def get_current_user_from_token(request: Request) -> SessionUser:
-    """Retrieve user from JWT Bearer token (for API requests)."""
-    auth_header = request.headers.get("Authorization")
-    if not auth_header or not auth_header.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
+# --- Session cookies (web UI) --------------------------------------------------
 
-    token = auth_header.split(" ")[1]
+SESSION_COOKIE = "ar_session"
+# The AuthRecon API token, set by /api/auth/authrecon-session and turned into
+# an Authorization header by the /apps/authrecon proxy.
+AUTHRECON_COOKIE = "ar_api"
+AUTHRECON_COOKIE_PATH = "/apps/authrecon"
+CSRF_HEADER = "X-Requested-With"
+
+
+def _cookie_secure(request: Request) -> bool:
+    """Secure cookies need HTTPS. SESSION_COOKIE_SECURE=true|false overrides;
+    the default follows the request (or X-Forwarded-Proto behind a TLS proxy)."""
+    setting = (os.getenv("SESSION_COOKIE_SECURE") or "auto").strip().lower()
+    if setting in ("1", "true", "yes", "on"):
+        return True
+    if setting in ("0", "false", "no", "off"):
+        return False
+    proto = request.headers.get("x-forwarded-proto", request.url.scheme)
+    return proto.split(",")[0].strip().lower() == "https"
+
+
+def set_cookie(response: Response, request: Request, name: str, value: str, max_age: int,
+               path: str = "/") -> None:
+    response.set_cookie(name, value, max_age=max_age, path=path, httponly=True,
+                        secure=_cookie_secure(request), samesite="strict")
+
+
+def set_session_cookie(response: Response, request: Request, token: str) -> None:
+    set_cookie(response, request, SESSION_COOKIE, token, JWT_EXPIRATION_HOURS * 3600)
+    # A new session never inherits the previous one's AuthRecon token.
+    response.delete_cookie(AUTHRECON_COOKIE, path=AUTHRECON_COOKIE_PATH)
+
+
+def clear_session_cookies(response: Response) -> None:
+    response.delete_cookie(SESSION_COOKIE, path="/")
+    response.delete_cookie(AUTHRECON_COOKIE, path=AUTHRECON_COOKIE_PATH)
+
+
+def session_token_from_request(request: Request) -> str | None:
+    """The caller's session token: a bearer header, else the session cookie.
+
+    Cookie-authenticated requests must carry CSRF_HEADER (403 otherwise).
+    Records the source in ``request.state.auth_source`` ("bearer" | "cookie")."""
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        request.state.auth_source = "bearer"
+        return auth_header[7:]
+    token = request.cookies.get(SESSION_COOKIE)
+    if token:
+        if not request.headers.get(CSRF_HEADER):
+            raise HTTPException(status_code=403, detail="Missing X-Requested-With header")
+        request.state.auth_source = "cookie"
+        return token
+    return None
+
+
+def authenticated_by_cookie(request: Request) -> bool:
+    return getattr(request.state, "auth_source", None) == "cookie"
+
+
+def get_current_user_from_token(request: Request) -> SessionUser:
+    """The signed-in user, from the bearer header or the session cookie."""
+    token = session_token_from_request(request)
+    if not token:
+        raise HTTPException(status_code=401, detail="Not signed in")
     payload = decode_jwt_token(token)
-    return session_user_from_payload(payload)
+    return session_user_from_payload(payload, request.url.path)

@@ -1,4 +1,4 @@
-"""Portal routes take bearer auth (no cookie session); SecBot-era routes are gone."""
+"""Portal auth: bearer tokens, or the web UI's HttpOnly session cookie (with a CSRF header); SecBot-era routes are gone."""
 from __future__ import annotations
 
 import secrets
@@ -61,7 +61,7 @@ def test_secbot_era_routes_are_gone(client, method, path):
     assert client.request(method, path, headers=_bearer(True)).status_code in (404, 405)
 
 
-def test_tools_list_takes_bearer_not_cookie(client):
+def test_tools_list_takes_bearer_not_legacy_cookie(client):
     assert client.get("/api/tools", headers=_bearer(False)).status_code == 200
     assert client.get("/api/tools").status_code == 401
     client.cookies.set("secportal_session", "anything")
@@ -73,10 +73,10 @@ def test_auth_me(client):
     assert client.get("/api/auth/me").status_code == 401
 
 
-def test_cookie_session_helpers_are_gone():
+def test_legacy_cookie_session_helpers_are_gone():
     import auth
 
-    for name in ("get_current_user", "login_user", "logout_user", "SESSION_COOKIE"):
+    for name in ("get_current_user", "login_user", "logout_user"):
         assert not hasattr(auth, name), name
 
 
@@ -130,3 +130,107 @@ def test_role_and_status_changes_are_audited(client):
         events = {(e.event_type, e.target_username, e.actor_username) for e in session.query(AuditLog).all()}
     assert ("role_changed", "user", "admin") in events
     assert ("user_deactivated", "user", "admin") in events
+
+
+# --- HttpOnly session cookie (web UI) -----------------------------------------
+
+CSRF = {"X-Requested-With": "AuthRecon"}
+PASSWORD = "Correct-Horse-Battery-9"
+
+
+def _login(client) -> "object":
+    portal_app._login_attempts.clear()  # the per-IP login limit spans tests
+    client.app.state.user_store.add_user("alice@example.com", PASSWORD, is_admin=False)
+    return client.post("/api/auth/login", json={"username": "alice@example.com", "password": PASSWORD})
+
+
+def test_login_sets_httponly_strict_session_cookie(client):
+    resp = _login(client)
+    assert resp.status_code == 200
+    cookie = next(h for h in resp.headers.get_list("set-cookie") if h.startswith("ar_session="))
+    assert "HttpOnly" in cookie and "SameSite=strict" in cookie and "Path=/" in cookie
+    assert "Secure" not in cookie  # plain HTTP test server; HTTPS adds it
+
+
+def test_cookie_session_needs_the_csrf_header(client):
+    _login(client)
+    assert client.get("/api/auth/me", headers=CSRF).json()["username"] == "alice@example.com"
+    # A cross-site form or plain request cannot add the header.
+    assert client.get("/api/auth/me").status_code == 403
+
+
+def test_https_requests_get_secure_cookies(client):
+    portal_app._login_attempts.clear()
+    client.app.state.user_store.add_user("bob@example.com", PASSWORD, is_admin=False)
+    resp = client.post("/api/auth/login", json={"username": "bob@example.com", "password": PASSWORD},
+                       headers={"X-Forwarded-Proto": "https"})
+    assert "Secure" in next(h for h in resp.headers.get_list("set-cookie") if h.startswith("ar_session="))
+
+
+def test_logout_revokes_and_clears_the_cookie(client, monkeypatch):
+    import app as portal
+
+    revoked = []
+    monkeypatch.setattr(portal, "revoke_jti", lambda jti, ttl: revoked.append(jti))
+    _login(client)
+    resp = client.post("/api/auth/logout", headers=CSRF)
+    assert resp.status_code == 200 and revoked
+    assert any(h.startswith('ar_session=""') or "Max-Age=0" in h for h in resp.headers.get_list("set-cookie"))
+
+
+def test_browser_sessions_cannot_mint_service_tokens(client):
+    _login(client)
+    assert client.post("/api/tools/auth_recon/service-token", headers=CSRF).status_code == 403
+
+
+def test_authrecon_session_sets_only_an_httponly_cookie(client, monkeypatch):
+    import app as portal
+
+    calls = []
+
+    class FakeResponse:
+        status_code = 200
+
+        def json(self):
+            return {"access_token": "ar-access-token", "expires_at": "2099-01-01T00:00:00+00:00"}
+
+    class FakeClient:
+        def __init__(self, *a, **k):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *exc):
+            return False
+
+        async def post(self, url, json):
+            calls.append((url, json))
+            return FakeResponse()
+
+    monkeypatch.setattr(portal.httpx, "AsyncClient", FakeClient)
+    _login(client)
+    resp = client.post("/api/auth/authrecon-session", headers=CSRF)
+    assert resp.status_code == 200
+    assert "ar-access-token" not in resp.text  # never in the body
+    cookie = next(h for h in resp.headers.get_list("set-cookie") if h.startswith("ar_api="))
+    assert "HttpOnly" in cookie and "Path=/apps/authrecon" in cookie
+    assert calls[0][0].endswith("/api/v1/auth/portal-login")
+
+
+def test_proxy_forwards_the_api_cookie_as_bearer_and_drops_cookies(client, monkeypatch):
+    import app as portal
+
+    seen = {}
+
+    async def fake_proxy(request, base, path, extra_headers=None):
+        seen["extra"] = extra_headers
+        seen["forwarded"] = portal._build_proxy_headers(request.headers)
+        return portal.Response(status_code=200)
+
+    monkeypatch.setattr(portal, "_proxy_request", fake_proxy)
+    _login(client)
+    client.cookies.set("ar_api", "ar-access-token", path="/apps/authrecon")
+    assert client.get("/apps/authrecon/api/v1/runs", headers=CSRF).status_code == 200
+    assert seen["extra"] == {"Authorization": "Bearer ar-access-token"}
+    assert not any(k.lower() == "cookie" for k in seen["forwarded"])

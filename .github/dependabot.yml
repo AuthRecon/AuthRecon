@@ -1,0 +1,17 @@
+# Weekly update PRs for dependencies; each runs the tests and security checks.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directories: ["/backend/authrecon/backend", "/backend/security-portal", "/backend/authrecon-mcp", "/backend/loginlab"]
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 5
+  - package-ecosystem: npm
+    directory: "/"
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 5
+  - package-ecosystem: docker
+    directories: ["/", "/backend/authrecon/backend", "/backend/security-portal", "/backend/authrecon-mcp", "/backend/loginlab"]
+    schedule: { interval: weekly }
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule: { interval: weekly }

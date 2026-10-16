@@ -47,9 +47,27 @@ const preflightMessages = [
   'Ready to launch'
 ]
 
+
+// Host of a URL the user is typing (empty while it is not a URL yet).
+function hostOf(url) {
+  try {
+    return new URL(url.trim()).hostname.toLowerCase()
+  } catch {
+    return ''
+  }
+}
+
+// Same rule as the backend: exact host, or "*.example.com" for it and its subdomains.
+function hostAllowed(host, domains) {
+  return domains.some(d => (d.startsWith('*.')
+    ? host === d.slice(2) || host.endsWith(`.${d.slice(2)}`)
+    : host === d))
+}
+
 function AuthReconLaunch() {
   const navigate = useNavigate()
   const [targetUrl, setTargetUrl] = useState('')
+  const targetHost = hostOf(targetUrl)
   const [loginHint, setLoginHint] = useState('')
   const [domainPrefix, setDomainPrefix] = useState('')
   const [authTypeOverride, setAuthTypeOverride] = useState('')
@@ -256,6 +274,24 @@ function AuthReconLaunch() {
       setPendingRunDetail(fallback)
       setTerminalLogs(buildTerminalLogs(fallback))
       setActiveRunId(runId)
+    }
+  }
+
+  // Stored credentials are bound to the domains they may be used on
+  // (backend services/credential_domains.py).
+  const editCredentialDomains = async (credential) => {
+    const current = (credential.allowed_domains || []).join(', ')
+    const entered = window.prompt(
+      `Domains "${credential.name}" may be used on, comma-separated (app.example.com or *.example.com):`,
+      current || targetHost || '',
+    )
+    if (entered === null) return
+    const allowed = entered.split(',').map(s => s.trim()).filter(Boolean)
+    try {
+      await authreconApi.patch(`credentials/${credential.id}`, { allowed_domains: allowed })
+      credentialsQuery.refetch()
+    } catch (err) {
+      alert(err.response?.data?.detail?.[0]?.msg || err.response?.data?.detail || 'Could not save the domains')
     }
   }
 
@@ -816,9 +852,27 @@ function AuthReconLaunch() {
                             : 'border-(--stroke-dark) hover:border-(--stroke-blue)'
                         }`}
                       >
-                        <div>
+                        <div className="min-w-0">
                           <p className="text-sm font-semibold text-slate-100">{credential.name}</p>
                           <p className="text-xs text-slate-500">{credential.username}</p>
+                          <p className="text-xs text-slate-500">
+                            Allowed on: {credential.allowed_domains?.length
+                              ? credential.allowed_domains.join(', ')
+                              : 'any site until first use (then bound to that site)'}
+                            <button
+                              type="button"
+                              className="ml-2 text-(--accent-blue) hover:underline"
+                              onClick={(e) => { e.preventDefault(); editCredentialDomains(credential) }}
+                            >
+                              Edit domains
+                            </button>
+                          </p>
+                          {targetHost && credential.allowed_domains?.length > 0
+                            && !hostAllowed(targetHost, credential.allowed_domains) && (
+                            <p className="text-xs text-amber-300 mt-1">
+                              Not allowed on {targetHost}: the run will be refused unless you add it.
+                            </p>
+                          )}
                         </div>
                         <input
                           type="radio"

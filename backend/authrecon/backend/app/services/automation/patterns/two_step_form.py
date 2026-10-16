@@ -29,6 +29,7 @@ from ..types import ScreenshotCapture, RecordedAction, FormAuthResult, Automatio
 from ..username_utils import get_username_variants
 from ..pre_run_discovery import discover_auth_elements
 from .form_login import _extract_feedback_message, _extract_heading
+from app.services.automation.typing_guard import ensure_safe_to_type
 
 
 def _find_input_by_type(driver: webdriver.Chrome, input_type: str, keywords: list[str]) -> Optional[webdriver.remote.webelement.WebElement]:
@@ -285,6 +286,7 @@ def run_two_step_form_login(
         # Enter password
         events.append("Entering password")
         password_field.clear()
+        ensure_safe_to_type(driver.current_url)
         password_field.send_keys(password)
         time.sleep(0.5)
 

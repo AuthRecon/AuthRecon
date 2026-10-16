@@ -119,7 +119,7 @@ def test_upload_parses_and_stores_encrypted(api, artifact_storage):
 
 
 @pytest.mark.parametrize("data,msg", [
-    (b"not a zip", "must be a .zip"),
+    (b"not a zip", "Upload a WAS export"),
     (_zip({"big.txt": b"0" * 5_000_000}), "zip bomb"),
 ])
 def test_bad_uploads_are_rejected(api, data, msg):

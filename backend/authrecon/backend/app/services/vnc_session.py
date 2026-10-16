@@ -257,10 +257,17 @@ def live_view(
     if run_model is None:
         from app.models import Run as run_model  # noqa: N813
 
+    # Browser isolation: the display lives in the browser container and the
+    # run's browsers are started there (automation/remote_browser.py).
+    from app.services.automation import remote_browser
+
+    isolated = remote_browser.isolation_enabled() and session_factory is VncSession
+    if isolated:
+        session_factory = remote_browser.RemoteVncSession
     session = session_factory(run_id)
     try:
         session.start()
-        with display_env(session.display):
+        with (remote_browser.use_display(session.display) if isolated else display_env(session.display)):
             _set_vnc_port(db, run_model, run_id, session.novnc_port)
             yield session
     finally:

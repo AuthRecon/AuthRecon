@@ -9,7 +9,7 @@ export const authService = {
    * Login with username and password
    * @param {string} username
    * @param {string} password
-   * @returns {Promise<{user: object, token: string}>}
+   * @returns {Promise<{user: object}>}
    */
   async login(username, password) {
     try {
@@ -18,17 +18,33 @@ export const authService = {
         password,
       })
 
-      // Store token and user info in localStorage
-      const { token, user } = response.data
-      localStorage.setItem('auth_token', token)
-      localStorage.setItem('user', JSON.stringify(user))
+      // Two-factor accounts: no session yet, the code step comes next (verifyMfa).
+      if (response.data.mfa_required) return response.data
+
+      // The session itself is an HttpOnly cookie; keep only who signed in.
+      localStorage.setItem('user', JSON.stringify(response.data.user))
+      // Admins who must set up two-factor first: the session only reaches the
+      // MFA endpoints until they do (AuthGuard sends them to the setup page).
+      if (response.data.mfa_enrollment_required) localStorage.setItem('mfa_enroll', '1')
+      else localStorage.removeItem('mfa_enroll')
 
       return response.data
     } finally {
-      // Never reuse a previous user's AuthRecon token on this browser.
-      localStorage.removeItem('authrecon_access_token')
-      localStorage.removeItem('authrecon_access_expires_at')
+      // A new session gets its own AuthRecon session (the portal also drops the old cookie).
+      localStorage.removeItem('authrecon_session_expires_at')
     }
+  },
+
+  /**
+   * Second login step: exchange the password step's mfa_token and a code
+   * (authenticator or backup code) for a session.
+   */
+  async verifyMfa(mfaToken, code) {
+    const response = await api.post('/api/auth/mfa/verify', { mfa_token: mfaToken, code })
+    localStorage.setItem('user', JSON.stringify(response.data.user))
+    localStorage.removeItem('mfa_enroll')
+    localStorage.removeItem('authrecon_session_expires_at')
+    return response.data
   },
 
   /**
@@ -49,6 +65,6 @@ export const authService = {
    * @returns {boolean}
    */
   isAuthenticated() {
-    return !!localStorage.getItem('auth_token')
+    return !!localStorage.getItem('user')
   },
 }

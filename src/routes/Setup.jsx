@@ -125,12 +125,12 @@ function Setup() {
 
       const data = response.data
 
-      if (!data?.token || !data?.user) {
+      if (!data?.user) {
         throw new Error('Setup response missing authentication data')
       }
 
-      // Persist auth session directly with setup response
-      setSession(data.user, data.token)
+      // The portal set the session cookie; record who signed in
+      setSession(data.user)
 
       // Redirect to dashboard
       navigate('/')

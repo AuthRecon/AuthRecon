@@ -29,7 +29,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_active_profile, get_current_admin, resolve_api_key
 from app.db import get_db
 from app.models.api_key import APIKey
-from app.models.app_setting import MCP_ENABLED, get_setting, set_setting
+from app.models.app_setting import MCP_ENABLED, MCP_RUNS_NEED_APPROVAL, get_setting, set_setting
 from app.models.profile import AuthReconProfile
 from app.services.profiles import sync_portal_profile
 
@@ -46,6 +46,7 @@ class ApiKeySummary(BaseModel):
     created_at: datetime
     last_used_at: datetime | None = None
     last_mcp_used_at: datetime | None = None
+    scope: str = "full"
 
 
 class AiStatus(BaseModel):
@@ -56,6 +57,7 @@ class AiStatus(BaseModel):
     use_ai_suggestions: bool
     api_keys: list[ApiKeySummary]
     last_client_activity: datetime | None = None
+    mcp_runs_need_approval: bool = False
 
 
 class AiPreferences(BaseModel):
@@ -101,6 +103,7 @@ def get_ai_status(
             created_at=k.created_at,
             last_used_at=k.last_used_at,
             last_mcp_used_at=k.last_mcp_used_at,
+            scope=k.scope or "full",
         )
         for k in keys
     ]
@@ -114,6 +117,7 @@ def get_ai_status(
         use_ai_suggestions=bool(current_profile.llm_enabled),
         api_keys=summaries,
         last_client_activity=max(connected) if connected else None,
+        mcp_runs_need_approval=bool(get_setting(db, MCP_RUNS_NEED_APPROVAL, False)),
     )
 
 
@@ -146,6 +150,17 @@ def set_mcp_enabled(
     set_setting(db, MCP_ENABLED, bool(payload.enabled))
     _audit_setting(db, _admin, "mcp_enabled" if payload.enabled else "mcp_disabled", {})
     return McpToggle(enabled=mcp_enabled(db))
+
+
+@router.put("/mcp/approval", response_model=McpToggle, summary="Require approval for runs AI clients start (admin)")
+def set_mcp_approval(
+    payload: McpToggle,
+    db: Session = Depends(get_db),
+    _admin: AuthReconProfile = Depends(get_current_admin),
+) -> McpToggle:
+    set_setting(db, MCP_RUNS_NEED_APPROVAL, bool(payload.enabled))
+    _audit_setting(db, _admin, "mcp_approval_on" if payload.enabled else "mcp_approval_off", {})
+    return McpToggle(enabled=bool(get_setting(db, MCP_RUNS_NEED_APPROVAL, False)))
 
 
 @router.get("/api-access", response_model=list[ApiAccessEntry], summary="Who may create API/MCP keys (admin)")

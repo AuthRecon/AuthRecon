@@ -7,9 +7,8 @@ import { clearSessionStorage } from '../services/sessionKeys'
  * Manages user authentication state globally
  */
 const useAuthStore = create((set, get) => ({
-  // State
+  // State (the session token is an HttpOnly cookie; `user` means signed in)
   user: null,
-  token: null,
   isLoading: false,
   error: null,
   hasHydrated: false,
@@ -19,13 +18,15 @@ const useAuthStore = create((set, get) => ({
    * Initialize auth state from localStorage
    */
   initialize: () => {
-    const token = localStorage.getItem('auth_token')
+    // Older versions kept tokens in localStorage; drop them.
+    for (const key of ['auth_token', 'authrecon_access_token', 'authrecon_access_expires_at']) {
+      localStorage.removeItem(key)
+    }
     const user = localStorage.getItem('user')
 
-    if (token && user) {
+    if (user) {
       try {
         set({
-          token,
           user: JSON.parse(user),
           hasHydrated: true,
         })
@@ -34,31 +35,26 @@ const useAuthStore = create((set, get) => ({
         clearSessionStorage()
         set({
           user: null,
-          token: null,
           hasHydrated: true,
         })
       }
     } else {
       set({
         user: null,
-        token: null,
         hasHydrated: true,
       })
     }
   },
 
   /**
-   * Persist authenticated session details
+   * Record who signed in (the portal has already set the session cookie)
    * @param {object} user
-   * @param {string} token
    */
-  setSession: (user, token) => {
-    localStorage.setItem('auth_token', token)
+  setSession: (user) => {
     localStorage.setItem('user', JSON.stringify(user))
 
     set({
       user,
-      token,
       error: null,
       hasHydrated: true,
     })
@@ -74,9 +70,13 @@ const useAuthStore = create((set, get) => ({
 
     try {
       const data = await authService.login(username, password)
+      if (data.mfa_required) {
+        set({ isLoading: false, error: null })
+        return data // Login.jsx asks for the code next
+      }
 
       // Update session + state
-      get().setSession(data.user, data.token)
+      get().setSession(data.user)
       set({
         isLoading: false,
         error: null,
@@ -94,6 +94,22 @@ const useAuthStore = create((set, get) => ({
   },
 
   /**
+   * Second login step (two-factor code)
+   */
+  verifyMfa: async (mfaToken, code) => {
+    set({ isLoading: true, error: null })
+    try {
+      const data = await authService.verifyMfa(mfaToken, code)
+      get().setSession(data.user)
+      set({ isLoading: false, error: null })
+      return data
+    } catch (error) {
+      set({ error: error.response?.data?.detail || 'Verification failed', isLoading: false })
+      throw error
+    }
+  },
+
+  /**
    * Logout user
    */
   logout: async () => {
@@ -103,7 +119,6 @@ const useAuthStore = create((set, get) => ({
       // Clear state
       set({
         user: null,
-        token: null,
         error: null,
         hasHydrated: true,
       })
@@ -121,7 +136,7 @@ const useAuthStore = create((set, get) => ({
    * Check if user is authenticated
    */
   isAuthenticated: () => {
-    return !!get().token
+    return !!get().user
   },
 }))
 

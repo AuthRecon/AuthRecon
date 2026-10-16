@@ -10,6 +10,8 @@ from sqlalchemy.orm import Mapped, Session
 from app.db.base import Base
 
 MCP_ENABLED = "mcp_enabled"
+# Runs an MCP client submits wait for a human to approve them (api/runs.py).
+MCP_RUNS_NEED_APPROVAL = "mcp_runs_need_approval"
 
 
 class AppSetting(Base):

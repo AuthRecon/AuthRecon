@@ -42,6 +42,9 @@ from app.services.automation.navigation import (
 )
 
 from app.services.automation.types import FormAuthResult, RecordedAction, ScreenshotCapture
+from app.services.automation.playwright_guard import harden_playwright_context, launch_chromium
+from app.services.automation.remote_browser import browser_tmp_dir
+from app.services.automation.typing_guard import ensure_safe_to_type
 
 
 async def attempt_saml_login_playwright(
@@ -58,7 +61,7 @@ async def attempt_saml_login_playwright(
     Returns:
         FormAuthResult with complete SAML flow captured in HAR
     """
-    har_path = Path(tempfile.gettempdir()) / f"{run_id}-playwright.har"
+    har_path = Path(browser_tmp_dir()) / f"{run_id}-playwright.har"
     events: List[str] = live_events()
     screenshots: List[ScreenshotCapture] = []
     recorded_actions: List[RecordedAction] = []
@@ -66,11 +69,12 @@ async def attempt_saml_login_playwright(
     async with async_playwright() as p:
         async def _open_page(disable_http2: bool = False):
             launch_args = ['--disable-blink-features=AutomationControlled']
-            browser = await p.chromium.launch(
+            browser = await launch_chromium(p, 
                 headless=True,
                 args=with_http2_disabled(launch_args) if disable_http2 else launch_args,
             )
             context = await browser.new_context(
+                accept_downloads=False,
                 record_har_path=str(har_path),
                 record_har_omit_content=False,
                 record_har_mode='minimal',
@@ -78,6 +82,7 @@ async def attempt_saml_login_playwright(
                 user_agent='AuthRecon/1.0 (Playwright Engine - SAML)',
                 viewport={'width': 1920, 'height': 1080},
             )
+            await harden_playwright_context(context)
             page = await context.new_page()
             page.set_default_timeout(timeout_seconds * 1000)
             return browser, context, page
@@ -159,6 +164,7 @@ async def attempt_saml_login_playwright(
             # Fill password
             if password:
                 events.append("Filling IdP password: ********")
+                ensure_safe_to_type(page.url)
                 await password_field.fill(password)
                 recorded_actions.append(RecordedAction(
                     action="fill",

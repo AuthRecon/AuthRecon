@@ -118,6 +118,7 @@ async def create_api_key(
         name=payload.name,
         key_hash=key_hash,
         prefix=prefix,
+        scope=payload.scope,
         is_revoked=False,
         expires_at=expires_at,
         created_at=datetime.now(timezone.utc),
@@ -135,6 +136,7 @@ async def create_api_key(
         prefix=api_key.prefix,
         created_at=api_key.created_at,
         expires_at=api_key.expires_at,
+        scope=api_key.scope,
     )
 
 

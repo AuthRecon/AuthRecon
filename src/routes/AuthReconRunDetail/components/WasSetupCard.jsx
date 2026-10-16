@@ -3,22 +3,8 @@ import { CheckCircle2, Copy, Download, Loader2, PlayCircle, ShieldCheck, XCircle
 import Card from '../../../components/Card'
 import Button from '../../../components/Button'
 import authreconApi from '../../../services/authreconApi'
-
-async function copyText(text) {
-  try {
-    await navigator.clipboard.writeText(text)
-    return true
-  } catch {
-    // Non-secure origins (plain-HTTP hostnames) have no clipboard API.
-    const area = document.createElement('textarea')
-    area.value = text
-    document.body.appendChild(area)
-    area.select()
-    const ok = document.execCommand('copy')
-    document.body.removeChild(area)
-    return ok
-  }
-}
+import ScanReadiness from './ScanReadiness'
+import { copyText } from '../../../utils/copyText'
 
 function Field({ label, value, hint, mono = true }) {
   const [copied, setCopied] = useState(false)
@@ -182,6 +168,7 @@ function WasSetupCard({ runId, setup, onChanged }) {
           {setup.notes.map(note => <li key={note}>{note}</li>)}
         </ul>
       )}
+      <ScanReadiness readiness={setup.readiness} />
       {error && <p className="mt-3 text-sm text-rose-400">{error}</p>}
     </Card>
   )

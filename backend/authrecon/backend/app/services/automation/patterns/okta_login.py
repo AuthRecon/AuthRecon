@@ -17,6 +17,7 @@ from ..security_context_extractor import extract_security_context
 from ..types import FormAuthResult, ScreenshotCapture, RecordedAction, AutomationFailure
 from ..username_utils import get_username_variants
 from ..pre_run_discovery import discover_auth_elements
+from app.services.automation.typing_guard import ensure_safe_to_type
 
 
 # Okta Sign-In Widget Selectors
@@ -252,6 +253,7 @@ def run_okta_login(
 
         # Step 2: Enter password
         password_field.clear()
+        ensure_safe_to_type(driver.current_url)
         password_field.send_keys(password)
         events.append("Populated password field.")
         recorded_actions.append(

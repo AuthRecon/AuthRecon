@@ -33,6 +33,7 @@ from ..username_utils import get_username_variants
 from ..security_context_extractor import extract_security_context
 from ..pre_run_discovery import discover_auth_elements
 from ..security_context_extractor import extract_security_context
+from app.services.automation.typing_guard import ensure_safe_to_type
 
 
 # LDAP/ADFS username field selectors
@@ -222,6 +223,7 @@ def run_ldap_login(
         password_selector = _selector_for_element(driver, password_field)
 
         password_field.clear()
+        ensure_safe_to_type(driver.current_url)
         password_field.send_keys(password)
         events.append("Populated password field.")
         recorded_actions.append(

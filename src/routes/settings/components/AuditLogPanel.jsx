@@ -22,6 +22,12 @@ const EVENT_LABELS = {
   loginlab_enabled: { label: 'LoginLab Enabled', color: 'text-amber-400' },
   loginlab_disabled: { label: 'LoginLab Disabled', color: 'text-slate-400' },
   security_notice_acknowledged: { label: 'Security Notice Acknowledged', color: 'text-slate-400' },
+  mfa_enabled: { label: 'Two-Factor Turned On', color: 'text-emerald-400' },
+  mfa_disabled: { label: 'Two-Factor Turned Off', color: 'text-amber-400' },
+  mfa_failure: { label: 'Wrong Two-Factor Code', color: 'text-red-400' },
+  mfa_reset: { label: 'Two-Factor Reset by Admin', color: 'text-amber-400' },
+  mfa_backup_codes_regenerated: { label: 'New Backup Codes', color: 'text-slate-400' },
+  mfa_policy_changed: { label: 'Two-Factor Policy Changed', color: 'text-amber-400' },
 }
 
 const ALL_EVENTS = Object.keys(EVENT_LABELS)

@@ -1,0 +1,11 @@
+# Secret scanning (CI: .github/workflows/tests.yml). Default rules, plus two
+# files that hold detection patterns and test fixtures, not secrets.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Secret-detection patterns and test fixtures"
+paths = [
+  '''backend/authrecon/backend/app/services/js_secret_scanner\.py''',
+  '''backend/authrecon/backend/tests/test_sanitize\.py''',
+]

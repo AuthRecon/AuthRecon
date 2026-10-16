@@ -34,6 +34,8 @@ from app.schemas.run import (
 )
 from app.schemas.credential import CredentialCreate
 from app.schemas.types import HttpUrlStr
+from app.services.target_guard import TargetBlocked, check_target
+from app.services.credential_domains import CredentialDomainError, check_credential_for_target, host_of
 from app.services.auth_detection import detect_auth_type
 from app.services.credentials import create_credential, get_credential, touch_usage
 from app.services.queue import get_queue
@@ -120,6 +122,17 @@ def _submission_channel(profile: AuthReconProfile, client: str | None) -> str | 
     return "MCP" if (client or "").strip().lower() == "mcp" else "API key"
 
 
+def _needs_approval(db: Session, channel: str | None) -> bool:
+    """MCP-started runs wait for a person when the admin setting is on."""
+    from app.models.app_setting import MCP_RUNS_NEED_APPROVAL, get_setting
+
+    return channel == "MCP" and bool(get_setting(db, MCP_RUNS_NEED_APPROVAL, False))
+
+
+def _add_event(db: Session, run_id: str, message: str) -> None:
+    db.add(TimelineEvent(run_id=run_id, occurred_at=datetime.now(timezone.utc), message=message))
+
+
 def _submitted_by(profile: AuthReconProfile, channel: str | None) -> str:
     return f"{profile.username} (via {channel})" if channel else profile.username
 
@@ -144,6 +157,7 @@ def _run_to_summary(run: Run) -> RunSummary:
         operator=run.operator,
         ai_assisted=bool(options.get("ai_suggestions")),
         warnings=run_warnings(run),
+        awaiting_approval=bool(options.get("awaiting_approval")),
     )
 
 
@@ -319,6 +333,28 @@ class DetectRequest(BaseModel):
     login_hint: str | None = None
 
 
+def _check_credential_domain(db: Session, profile: AuthReconProfile, credential_id: str, target_url: str) -> None:
+    """A stored credential is only used on its allowed domains (services/credential_domains.py).
+    Runs before detection, so a mismatch never fetches the target."""
+    credential = get_credential(db, credential_id)
+    if not credential or credential.is_archived:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Credential not available")
+    _ensure_credential_access(profile, credential)
+    try:
+        check_credential_for_target(credential, target_url)  # binds an unbound credential; committed with the run
+    except CredentialDomainError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from None
+
+
+async def _guard_target(url: str) -> None:
+    """Refuse targets the SSRF guard blocks (services/target_guard.py). Resolves
+    DNS, so it runs in a worker thread."""
+    try:
+        await run_in_threadpool(check_target, url)
+    except TargetBlocked as exc:
+        raise HTTPException(status_code=422, detail=f"This target is not allowed: {exc}") from None
+
+
 @router.post("/detect", summary="Detect a target's login type without logging in")
 async def detect_login(
     payload: DetectRequest,
@@ -328,6 +364,7 @@ async def detect_login(
     uses and how the scanner would authenticate. Same probing a run does first."""
     from app.services.was_setup import _HTTP_CHALLENGE
 
+    await _guard_target(str(payload.target_url))
     detection = await run_in_threadpool(
         detect_auth_type, str(payload.target_url), login_hint=payload.login_hint, use_browser=True
     )
@@ -365,6 +402,9 @@ async def submit_run(
         options["submitted_via"] = channel
     credential: StoredCredential | None = None
     target_url = str(payload.target_url)
+    await _guard_target(target_url)
+    if payload.credential_id and payload.recording_mode != "manual":
+        _check_credential_domain(db, current_profile, payload.credential_id, target_url)
 
     # Check if this is a manual recording session
     is_manual_mode = payload.recording_mode == "manual"
@@ -450,6 +490,7 @@ async def submit_run(
                 username=username,
                 secret=payload.password or "",
                 additional_fields={},
+                allowed_domains=[host_of(target_url)],
             )
             credential = create_credential(db, owner=current_profile, payload=cred_payload)
             options["credential_id"] = credential.id
@@ -491,11 +532,16 @@ async def submit_run(
             )
         )
 
+    # Runs an MCP client starts can be held until a person approves them.
+    held = not is_manual_mode and _needs_approval(db, channel)
+    if held:
+        run.options = {**(run.options or {}), "awaiting_approval": True}
+        _add_event(db, run.id, "Waiting for approval: started by an AI client (MCP). Approve or reject it on the run page.")
     db.commit()
     db.refresh(run)
 
     # Queue to worker only for automated mode
-    if not is_manual_mode:
+    if not is_manual_mode and not held:
         queue = get_queue()
         queue.enqueue("app.worker.process_run", run.id, job_timeout=1800)
 
@@ -555,6 +601,52 @@ async def stream_run_events(
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
+def _decide_run(run_id: str, db: Session, profile: AuthReconProfile) -> Run:
+    if getattr(profile, "auth_method", None) == "api_key":
+        raise HTTPException(status_code=403, detail="Approve or reject runs in the AuthRecon web UI, not with an API key.")
+    run = _get_run_for_user(run_id, db, profile)
+    if not (run.options or {}).get("awaiting_approval"):
+        raise HTTPException(status_code=409, detail="This run is not waiting for approval.")
+    return run
+
+
+def _actor(profile: AuthReconProfile) -> str:
+    return getattr(profile, "username", None) or getattr(profile, "display_name", None) or "a user"
+
+
+@router.post("/{run_id}/approve", response_model=RunSummary, summary="Approve a run an AI client started")
+async def approve_run(
+    run_id: str,
+    db: Session = Depends(get_db),
+    current_profile: AuthReconProfile = Depends(get_current_active_profile),
+) -> RunSummary:
+    run = _decide_run(run_id, db, current_profile)
+    run.options = {k: v for k, v in (run.options or {}).items() if k != "awaiting_approval"}
+    _add_event(db, run.id, f"Approved by {_actor(current_profile)}")
+    db.commit()
+    db.refresh(run)
+    get_queue().enqueue("app.worker.process_run", run.id, job_timeout=1800)
+    return _run_to_summary(run)
+
+
+@router.post("/{run_id}/reject", response_model=RunSummary, summary="Reject a run an AI client started")
+async def reject_run(
+    run_id: str,
+    db: Session = Depends(get_db),
+    current_profile: AuthReconProfile = Depends(get_current_active_profile),
+) -> RunSummary:
+    run = _decide_run(run_id, db, current_profile)
+    message = f"Rejected by {_actor(current_profile)}: this run was started by an AI client and was not approved."
+    run.options = {k: v for k, v in (run.options or {}).items() if k != "awaiting_approval"}
+    run.status = RunStatus.failed
+    run.error_message = message
+    run.finished_at = datetime.now(timezone.utc)
+    _add_event(db, run.id, message)
+    db.commit()
+    db.refresh(run)
+    return _run_to_summary(run)
+
+
 @router.post(
     "/{run_id}/cancel",
     response_model=RunSummary,
@@ -604,6 +696,7 @@ async def rerun_test(
 
     # Extract configuration from original run
     target_url = original_run.target_url
+    await _guard_target(target_url)  # the rules may have changed since the original run
     auth_type = original_run.auth_type
     options = dict(original_run.options or {})
 
@@ -613,6 +706,9 @@ async def rerun_test(
 
     # Get credential or role info from original run
     credential_id = options.get("credential_id")
+    if credential_id:
+        # The credential's allowed domains may have changed since the original run.
+        _check_credential_domain(db, current_profile, credential_id, target_url)
     scope = options.get("scope", {})
     roles_payload = scope.get("roles", [])
 
@@ -641,13 +737,18 @@ async def rerun_test(
             message=f"Re-run of {run_id} submitted by {_submitted_by(current_profile, channel)}",
         )
     )
+    held = _needs_approval(db, channel)
+    if held:
+        new_run.options = {**(new_run.options or {}), "awaiting_approval": True}
+        _add_event(db, new_run.id, "Waiting for approval: started by an AI client (MCP). Approve or reject it on the run page.")
     db.commit()
     db.refresh(new_run)
 
     # Enqueue worker job (same as submit_run)
-    from app.services.queue import get_queue
-    queue = get_queue()
-    queue.enqueue("app.worker.process_run", new_run.id, job_timeout=1800)
+    if not held:
+        from app.services.queue import get_queue
+        queue = get_queue()
+        queue.enqueue("app.worker.process_run", new_run.id, job_timeout=1800)
 
     return _run_to_summary(new_run)
 

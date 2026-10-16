@@ -42,6 +42,10 @@ from app.services.automation import (
 )
 from app.services.side_files import build_side_file
 from app.services.verify_pattern import choose_verify_pattern
+from app.services import scan_readiness
+from app.services.target_guard import TargetBlocked, check_target
+from app.services.credential_domains import CredentialDomainError, check_credential_for_target, typing_allowed_hosts
+from app.services.automation import typing_guard
 from app.services.automation.navigation import drain_notes as drain_navigation_notes
 from app.services.live_timeline import current as live_timeline_current, event_prefix, live_timeline, not_yet_written
 from app.services.vnc_session import live_view
@@ -57,6 +61,8 @@ from app.services.exports.curl import export_to_curl, export_to_curl_script
 from app.services.exports.postman import export_to_postman
 from app.services.exports.zap import export_to_zap
 from sqlalchemy.orm.attributes import flag_modified
+from app.services.automation.playwright_guard import harden_playwright_context, launch_chromium
+from app.services.automation.remote_browser import browser_tmp_dir
 
 logger = logging.getLogger(__name__)
 register_model_hooks()
@@ -165,6 +171,8 @@ class VariantResult:
     # True when this variant already counted a playbook success, so learning
     # must not count the same run again.
     playbook_success_recorded: bool = False
+    # Summary of the post-login replay HAR (services/scan_readiness.har_signals).
+    har_signals: dict[str, Any] | None = None
 
 
 class _LinkExtractor(HTMLParser):
@@ -989,6 +997,7 @@ def _persist_snapshot_artifacts(
                 ))
 
                 if har_bytes:
+                    result.har_signals = scan_readiness.har_signals(har_bytes, sitemap_base)
                     har_description = (
                         f"Post-login HAR for {variant.label}: the authenticated landing page re-loaded "
                         "with the captured session cookies. It does not contain the login requests "
@@ -3196,6 +3205,19 @@ def process_run(run_id: str) -> None:
             db.commit()
             db.refresh(run)
 
+            # Re-check the target here, not only at submission: DNS answers can
+            # change between the two (services/target_guard.py).
+            try:
+                check_target(run.target_url)
+            except TargetBlocked as exc:
+                message = f"This target is not allowed: {exc}"
+                run.status = RunStatus.failed
+                run.error_message = message
+                run.finished_at = datetime.now(timezone.utc)
+                db.add(TimelineEvent(run_id=run.id, occurred_at=run.finished_at, message=message))
+                db.commit()
+                return
+
             llm_allowed = True
             if run.submitted_by:
                 llm_allowed = bool(run.submitted_by.llm_enabled)
@@ -3220,18 +3242,35 @@ def process_run(run_id: str) -> None:
 
             secret_used: str | None = None
             username: str | None = None
+            credential_domains: list[str] | None = None
             if isinstance(options, dict):
                 credential_id = options.get("credential_id")
                 username = options.get("username")
                 if credential_id:
                     credential = db.get(StoredCredential, credential_id)
                     if credential:
+                        # Its allowed domains may have changed since submission.
+                        try:
+                            if check_credential_for_target(credential, run.target_url):
+                                db.commit()  # bound on first use
+                        except CredentialDomainError as exc:
+                            run.status = RunStatus.failed
+                            run.error_message = str(exc)
+                            run.finished_at = datetime.now(timezone.utc)
+                            db.add(TimelineEvent(run_id=run.id, occurred_at=run.finished_at, message=str(exc)))
+                            db.commit()
+                            return
+                        credential_domains = list(credential.allowed_domains or [])
                         secret_used = get_plain_secret(credential)
                 elif "one_time_secret" in options:
                     cipher = get_credential_cipher()
                     enc_secret = options.get("one_time_secret")
                     if isinstance(enc_secret, str):
                         secret_used = cipher.decrypt(enc_secret.encode("utf-8")).decode("utf-8")
+
+            # Passwords are only typed on the target's own domain, the credential's
+            # allowed domains and known identity providers (automation/typing_guard.py).
+            typing_guard.set_policy(typing_allowed_hosts(run.target_url, credential_domains))
 
             variants = _build_variants(run, detected_label, username, secret_used)
             if not variants:
@@ -3433,6 +3472,25 @@ def process_run(run_id: str) -> None:
                         flag_modified(run, "security_context")
                         break  # Only need one variant's js_secrets
 
+            # Will this login make a good WAS scan, and with which settings?
+            if first_success:
+                try:
+                    readiness = scan_readiness.assess(
+                        auth_type=run.auth_type,
+                        target_url=run.target_url,
+                        final_url=run.final_url,
+                        pattern=run.pattern,
+                        post_auth_html=first_success.post_auth_html,
+                        security_context=run.security_context,
+                        tech_fingerprint=run.tech_fingerprint if isinstance(run.tech_fingerprint, dict) else None,
+                        detected_auth=(run.options or {}).get("detected_auth") if isinstance(run.options, dict) else None,
+                        har=first_success.har_signals,
+                    )
+                    run.options = {**(run.options if isinstance(run.options, dict) else {}), "scan_readiness": readiness}
+                    options_modified = False  # reassigned: already tracked
+                except Exception:
+                    logger.warning("Scan readiness assessment failed for run %s", run.id, exc_info=True)
+
             if options_modified:
                 flag_modified(run, "options")
 
@@ -3530,6 +3588,7 @@ def process_run(run_id: str) -> None:
             raise
     finally:
         get_artifact_storage().release_run(run_id)
+        typing_guard.clear_policy()
         _remove_temp_hars(run_id)
         db.close()
 
@@ -3540,8 +3599,14 @@ def _remove_temp_hars(run_id: str) -> None:
     import os
     import tempfile
 
-    tmp = tempfile.gettempdir()
-    for path in {*glob.glob(os.path.join(tmp, f"{run_id}*.har")), os.path.join(tmp, f"manual-{run_id}.har")}:
+    from app.services.automation.remote_browser import SHARE_DIR
+
+    paths: set[str] = set()
+    # The local temp dir and, with browser isolation, the volume shared with the browser container.
+    for tmp in {tempfile.gettempdir(), SHARE_DIR}:
+        paths |= {*glob.glob(os.path.join(tmp, f"{run_id}*.har")), *glob.glob(os.path.join(tmp, f"{run_id}*.har.tmp")),
+                  os.path.join(tmp, f"manual-{run_id}.har"), os.path.join(tmp, f"manual-{run_id}.har.tmp")}
+    for path in paths:
         try:
             os.remove(path)
         except FileNotFoundError:
@@ -3623,16 +3688,19 @@ def process_manual_session(run_id: str, target_url: str):
 
             async with async_playwright() as p:
                 async def _open_recording_browser(disable_http2: bool = False):
-                    browser = await p.chromium.launch(
+                    browser = await launch_chromium(
+                        p,
                         headless=False,  # Visible browser for VNC
                         args=[DISABLE_HTTP2_ARG] if disable_http2 else [],
                     )
 
                     # Create context with HAR recording
                     context = await browser.new_context(
-                        record_har_path=f"/tmp/manual-{run_id}.har",
+                        accept_downloads=False,
+                        record_har_path=f"{browser_tmp_dir()}/manual-{run_id}.har",
                         record_har_omit_content=False,
                     )
+                    await harden_playwright_context(context)
 
                     # Inject JavaScript to record user interactions for .side file generation
                     # IMPORTANT: Use add_init_script() to inject on EVERY page navigation
@@ -4203,7 +4271,7 @@ def process_manual_session(run_id: str, target_url: str):
 
                 # Now process HAR file after context is closed
                 try:
-                    har_file_path = f"/tmp/manual-{run_id}.har"
+                    har_file_path = f"{browser_tmp_dir()}/manual-{run_id}.har"
                     try:
                         with open(har_file_path, 'rb') as f:
                             har_bytes = f.read()

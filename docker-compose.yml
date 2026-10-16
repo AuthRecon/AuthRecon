@@ -35,6 +35,8 @@ services:
       REDIS_URL: redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env before starting}@authrecon-redis:6379/1
     ports:
       - "9000:9000"
+    # browser: reaches live views (VNC) in authrecon-browser when browser isolation is on.
+    networks: [default, browser]
     volumes:
       - ./backend/security-portal/tools.yaml:/app/tools.yaml:ro
       - portal-data:/app/data  # Persist encryption keys across rebuilds
@@ -54,6 +56,14 @@ services:
         certs: ./certs  # extra CA certificates, usually none (certs/README.md)
     ports:
       - "8001:8000"
+    # Opens untrusted pages in Chromium: cap what it can consume, and give its
+    # processes (a non-root user) no way to gain privileges.
+    mem_limit: ${API_MEM_LIMIT:-2g}
+    pids_limit: 2048
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     env_file:
       - ./backend/authrecon/backend/.env
     environment:
@@ -62,9 +72,13 @@ services:
       REDIS_URL: redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env before starting}@authrecon-redis:6379/0
       PORTAL_API_SECRET: ${PORTAL_API_SECRET:?Set PORTAL_API_SECRET in .env before starting}
       PORTAL_SERVICE_ID: auth_recon
+      # Browser isolation (opt-in, see ADMIN_GUIDE.md): headless browsers run in authrecon-browser.
+      BROWSER_ISOLATION: ${BROWSER_ISOLATION:-false}
+      BROWSER_AGENT_TOKEN: ${BROWSER_AGENT_TOKEN:-}
     volumes:
       - ./backend/authrecon/backend/app:/app/app
       - authrecon_artifacts:/app/data/artifacts
+    networks: [default, browser]
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -82,6 +96,14 @@ services:
         certs: ./certs  # extra CA certificates, usually none (certs/README.md)
     restart: unless-stopped
     shm_size: '256m'
+    # Opens untrusted pages in Chromium: cap what it can consume, and give its
+    # processes (a non-root user) no way to gain privileges.
+    mem_limit: ${WORKER_MEM_LIMIT:-4g}
+    pids_limit: 2048
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     env_file:
       - ./backend/authrecon/backend/.env
     environment:
@@ -90,12 +112,17 @@ services:
       REDIS_URL: redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env before starting}@authrecon-redis:6379/0
       PORTAL_API_SECRET: ${PORTAL_API_SECRET:?Set PORTAL_API_SECRET in .env before starting}
       ENABLE_PLAYWRIGHT_HAR: ${ENABLE_PLAYWRIGHT_HAR:-true}
+      # Browser isolation (opt-in, see ADMIN_GUIDE.md): headless browsers run in authrecon-browser.
+      BROWSER_ISOLATION: ${BROWSER_ISOLATION:-false}
+      BROWSER_AGENT_TOKEN: ${BROWSER_AGENT_TOKEN:-}
     # No VNC ports are published. Live views are per-run (app/services/vnc_session.py):
     # each gets its own display and a websockify port on the internal network that
     # only the portal's authenticated proxy (/apps/authrecon/vnc/{run_id}) uses.
     volumes:
       - ./backend/authrecon/backend/app:/app/app
       - authrecon_artifacts:/app/data/artifacts
+      - browser-share:/tmp/browser-share  # HAR files written by isolated browsers
+    networks: [default, browser]
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -141,6 +168,10 @@ services:
       context: ./backend/authrecon-mcp
       additional_contexts:
         certs: ./certs  # extra CA certificates, usually none (certs/README.md)
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     environment:
       AUTHRECON_API_URL: http://authrecon-api:8000/api/v1
     depends_on:
@@ -165,6 +196,7 @@ services:
       # starts the training environment, which is already off by default.
       # A deployment that never enables this profile never binds the port.
       - "127.0.0.1:5500:5500"
+    networks: [default, browser]  # reachable by isolated browsers too
     restart: "no"  # Don't auto-restart - controlled by admin toggle
     profiles:
       - loginlab  # Only starts when explicitly enabled
@@ -174,7 +206,42 @@ services:
       timeout: 10s
       retries: 3
 
+  # Browser isolation (opt-in): the browsers that visit target sites run here,
+  # with no AuthRecon secrets and no access to the database, Redis or MCP
+  # (only the `browser` network). The worker and API drive them remotely.
+  # Enable: BROWSER_ISOLATION=true and COMPOSE_PROFILES=browser-isolation in .env.
+  authrecon-browser:
+    build:
+      context: ./backend/authrecon/backend
+      additional_contexts:
+        certs: ./certs  # extra CA certificates, usually none (certs/README.md)
+    profiles: [browser-isolation]
+    restart: unless-stopped
+    entrypoint: ["python", "-m", "browser_agent.agent"]
+    command: []
+    shm_size: '256m'
+    mem_limit: ${BROWSER_MEM_LIMIT:-4g}
+    pids_limit: 4096
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    environment:
+      BROWSER_AGENT_TOKEN: ${BROWSER_AGENT_TOKEN:-}
+    volumes:
+      - browser-share:/tmp/browser-share
+    networks: [browser]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+networks:
+  default: {}
+  # Isolated browsers, the worker, the API, LoginLab and the portal (live views).
+  # Not postgres, redis or MCP.
+  browser: {}
+
 volumes:
   authrecon_db:
   authrecon_artifacts:
   portal-data:  # Persistent storage for portal encryption keys
+  browser-share:  # Playwright HAR files from isolated browsers
