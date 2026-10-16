@@ -7,7 +7,7 @@
 # context; this empty stage is the default for a plain `docker build`.
 FROM scratch AS certs
 
-FROM node:22-alpine AS build
+FROM node:25-alpine AS build
 
 # Trust any certificates in certs/ (none by default, then nothing changes).
 # Alpine has no update-ca-certificates without apk, so append them to the
