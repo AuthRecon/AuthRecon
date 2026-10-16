@@ -5,7 +5,7 @@
 # context; this empty stage is the default for a plain `docker build`.
 FROM scratch AS certs
 
-FROM python:3.11-slim AS base
+FROM python:3.14-slim AS base
 
 # Trust any certificates in certs/ (none by default, then nothing changes).
 # Multi-certificate PEM files are split, because update-ca-certificates
