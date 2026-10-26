@@ -23,8 +23,6 @@ Architecture:
 - Fallback: this module (slower, probabilistic, requires an opt-in
   provider — see SECURITY.md, "AI and MCP").
 
-This is planned as a licensed feature (see license_client.require_feature,
-commented out below until there's a real implementation to gate).
 """
 from __future__ import annotations
 
@@ -77,13 +75,6 @@ def suggest_auth_selectors(sanitized_html: str, *, screenshot_b64: str | None = 
     Raises:
         AIFallbackNotImplemented: always, until an implementation exists.
     """
-    # from app.services.license_client import require_feature, FeatureNotLicensedError
-    #
-    # require_feature(
-    #     "ai_fallback",
-    #     upgrade_message="AI-assisted auth-flow analysis requires an upgraded license.",
-    # )
-    #
     # (actual provider call here, using the sanitized_html this function
     # was given — never raw HTML, never a credential value)
 

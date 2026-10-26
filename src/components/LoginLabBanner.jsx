@@ -37,7 +37,7 @@ function LoginLabBanner() {
           <div className="text-sm">
             <span className="font-semibold text-amber-300">LoginLab Active</span>
             <span className="text-amber-200/80 ml-2">
-              Training environment with intentional vulnerabilities is running
+              Practice login targets are running
             </span>
           </div>
         </div>

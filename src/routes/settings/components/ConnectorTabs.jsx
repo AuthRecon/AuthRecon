@@ -4,7 +4,6 @@ import useAuthStore from '../../../store/authStore'
 const tabs = [
   { id: 'account', label: 'Account', description: 'Profile & password' },
   { id: 'ai', label: 'AI & MCP', description: 'Connect an AI client' },
-  { id: 'license', label: 'Licensing', description: 'License key & entitlement' },
   { id: 'users', label: 'User Management', description: 'Operators & access' },
   { id: 'loginlab', label: 'LoginLab', description: 'Training environment', adminOnly: true },
   { id: 'auditlog', label: 'Audit Log', description: 'Security event history', adminOnly: true },

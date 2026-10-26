@@ -178,7 +178,7 @@ services:
       - authrecon-api
 
   # LoginLab - Training environment (internal only, no external port binding)
-  # WARNING: Contains intentional vulnerabilities for testing - never expose externally
+  # WARNING: deliberately weak practice target (published demo passwords) - never expose externally
   loginlab:
     build:
       context: ./backend/loginlab

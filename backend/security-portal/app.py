@@ -4,8 +4,6 @@ from __future__ import annotations
 import logging
 import os
 import secrets
-import random
-import string
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -54,7 +52,6 @@ def _throttle(ip: str, max_attempts: int, window_seconds: int) -> None:
 from config import APP_VERSION, PortalConfig, load_config
 from database import Base, get_session, init_engine
 from models import PortalUser  # noqa: F401
-from models.license import ClientLicense, LicenseActivation  # noqa: F401
 from models.audit_log import AuditLog  # noqa: F401 — registers table with Base.metadata
 from models.security_notice import SecurityNoticeAck  # noqa: F401 — registers table
 from security_notice import router as security_notice_router
@@ -71,7 +68,6 @@ from asset_store import AssetStore
 from artifact_store import ArtifactStore
 from diagnostics import DiagnosticsManager
 from service_tokens import create_service_token
-from licensing import LicenseManager
 
 PROXY_METHODS = ("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
 HOP_HEADERS = {
@@ -133,47 +129,6 @@ class APILoginResponse(BaseModel):
         return (self.username or self.email or "").strip().lower()
 
 
-class LicenseStatusResponse(BaseModel):
-    valid: bool
-    tier: str
-    expiration: Optional[str]
-    installation_id: str
-    features: list[str]
-    last_checked: str
-    message: Optional[str] = None
-
-
-class LicenseRefreshRequest(BaseModel):
-    license_key: Optional[str] = None
-
-
-class GenerateLicenseRequest(BaseModel):
-    """Request to generate a new license."""
-    license_type: str  # 'professional', 'enterprise', 'perpetual'
-    credential_id: Optional[str] = None  # Link to client credential
-    expires_at: Optional[str] = None  # ISO datetime or None for perpetual
-    max_installations: int = 1
-    notes: Optional[str] = None
-
-
-class GenerateLicenseResponse(BaseModel):
-    """Response with generated license key."""
-    license_key: str
-    license_type: str
-    expires_at: Optional[str]
-    message: str
-
-
-class LicenseListResponse(BaseModel):
-    """Response with list of licenses."""
-    licenses: list[dict]
-
-
-class RevokeLicenseRequest(BaseModel):
-    """Request to revoke a license."""
-    reason: str
-
-
 def create_app(config_path: Optional[Path] = None) -> FastAPI:
     """Application factory."""
     config: PortalConfig = load_config(config_path)
@@ -226,7 +181,6 @@ def create_app(config_path: Optional[Path] = None) -> FastAPI:
     app.state.asset_store = asset_store
     app.state.artifact_store = artifact_store
     app.state.diagnostics = diagnostics_manager
-    app.state.license_manager = LicenseManager(config)
 
     # Redis client for VNC tickets (DB 1 — separate from authrecon's DB 0)
     _redis = _aioredis.from_url(config.redis_url, decode_responses=True)
@@ -240,12 +194,6 @@ def create_app(config_path: Optional[Path] = None) -> FastAPI:
         provided = request.headers.get("x-portal-service-secret")
         if not provided or provided != config.portal_api_secret:
             raise HTTPException(status_code=403, detail="Invalid service secret")
-
-    def get_license_manager(request: Request) -> LicenseManager:
-        manager: LicenseManager = getattr(request.app.state, "license_manager", None)
-        if manager is None:
-            raise HTTPException(status_code=500, detail="License manager unavailable")
-        return manager
 
     @app.middleware("http")
     async def add_security_headers(request: Request, call_next):
@@ -339,152 +287,6 @@ def create_app(config_path: Optional[Path] = None) -> FastAPI:
     @app.get("/network-tools", include_in_schema=False)
     async def network_tools_disabled():
         return JSONResponse(content=_legacy_ui_disabled(), status_code=410)
-
-    @app.get("/api/license/status", response_model=LicenseStatusResponse)
-    async def get_license_status(
-        license_manager: LicenseManager = Depends(get_license_manager),
-        _user: SessionUser = Depends(get_current_user_from_token),
-    ):
-        return license_manager.get_status().to_dict()
-
-    @app.post("/api/license/check", response_model=LicenseStatusResponse)
-    async def refresh_license(
-        payload: LicenseRefreshRequest,
-        license_manager: LicenseManager = Depends(get_license_manager),
-        _user: SessionUser = Depends(get_current_user_from_token),
-    ):
-        return license_manager.refresh(license_key=payload.license_key).to_dict()
-
-    # License Management (Admin Only)
-
-    def _generate_license_key(license_type: str) -> str:
-        """Generate a license key in format: AUTHRECON-TYPE-XXXX-XXXX-XXXX"""
-        type_prefix = license_type.upper()[:4]  # PROF, ENTE, PERP
-
-        def random_segment():
-            return ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
-
-        # Generate 3 random segments
-        seg1 = random_segment()
-        seg2 = random_segment()
-        seg3 = random_segment()
-
-        return f"AUTHRECON-{type_prefix}-{seg1}-{seg2}-{seg3}"
-
-    @app.post("/api/admin/licenses", response_model=GenerateLicenseResponse)
-    async def generate_license(
-        payload: GenerateLicenseRequest,
-        user: SessionUser = Depends(get_current_user_from_token)
-    ):
-        """Generate a new license (admin only)."""
-        if not user.is_admin:
-            raise HTTPException(status_code=403, detail="Admin access required")
-
-        # Generate license key
-        license_key = _generate_license_key(payload.license_type)
-
-        # Parse expiration
-        expires_at_dt = None
-        if payload.expires_at:
-            try:
-                expires_at_dt = datetime.fromisoformat(payload.expires_at.replace('Z', '+00:00'))
-            except ValueError:
-                raise HTTPException(status_code=400, detail="Invalid expiration date format")
-
-        # Create license record
-        with get_session() as db:
-            new_license = ClientLicense(
-                license_key=license_key,
-                license_type=payload.license_type,
-                credential_id=payload.credential_id,
-                issued_by=user.user_id,
-                expires_at=expires_at_dt,
-                max_installations=payload.max_installations,
-                notes=payload.notes
-            )
-            db.add(new_license)
-            db.commit()
-            db.refresh(new_license)
-            audit.emit(audit.LICENSE_GENERATED, actor_username=user.username,
-                       detail=f"license_id={new_license.id} type={payload.license_type}")
-
-            return GenerateLicenseResponse(
-                license_key=license_key,
-                license_type=payload.license_type,
-                expires_at=expires_at_dt.isoformat() if expires_at_dt else None,
-                message="License generated successfully"
-            )
-
-    @app.get("/api/admin/licenses", response_model=LicenseListResponse)
-    async def list_licenses(user: SessionUser = Depends(get_current_user_from_token)):
-        """List all Portal-issued licenses (admin only)."""
-        if not user.is_admin:
-            raise HTTPException(status_code=403, detail="Admin access required")
-
-        with get_session() as db:
-            from sqlalchemy import select
-            from models.license import ClientLicense
-            from models.asset import PortalAsset
-            from models import PortalUser
-
-            stmt = (
-                select(ClientLicense, PortalAsset, PortalUser)
-                .outerjoin(PortalAsset, ClientLicense.credential_id == PortalAsset.id)
-                .outerjoin(PortalUser, ClientLicense.issued_by == PortalUser.id)
-            )
-            results = db.execute(stmt).all()
-
-            licenses = []
-            for license_obj, asset, issuer in results:
-                # Count activations
-                activation_count = len(license_obj.activations) if license_obj.activations else 0
-
-                licenses.append({
-                    "id": license_obj.id,
-                    "license_key": license_obj.license_key,
-                    "license_type": license_obj.license_type,
-                    "credential_id": license_obj.credential_id,
-                    "credential_name": asset.company_name if asset else None,
-                    "issued_by": issuer.username if issuer else "Unknown",
-                    "issued_at": license_obj.issued_at.isoformat() if license_obj.issued_at else None,
-                    "expires_at": license_obj.expires_at.isoformat() if license_obj.expires_at else None,
-                    "max_installations": license_obj.max_installations,
-                    "activation_count": activation_count,
-                    "revoked": license_obj.revoked,
-                    "revoked_reason": license_obj.revoked_reason,
-                    "notes": license_obj.notes
-                })
-
-            return LicenseListResponse(licenses=licenses)
-
-    @app.post("/api/admin/licenses/{license_id}/revoke")
-    async def revoke_license(
-        license_id: str,
-        payload: RevokeLicenseRequest,
-        user: SessionUser = Depends(get_current_user_from_token)
-    ):
-        """Revoke a license (admin only)."""
-        if not user.is_admin:
-            raise HTTPException(status_code=403, detail="Admin access required")
-
-        with get_session() as db:
-            from sqlalchemy import select
-            from models.license import ClientLicense
-
-            stmt = select(ClientLicense).where(ClientLicense.id == license_id)
-            license_obj = db.execute(stmt).scalar_one_or_none()
-
-            if not license_obj:
-                raise HTTPException(status_code=404, detail="License not found")
-
-            license_obj.revoked = True
-            license_obj.revoked_reason = payload.reason
-            license_obj.revoked_at = datetime.utcnow()
-
-            db.commit()
-            audit.emit(audit.LICENSE_REVOKED, actor_username=user.username, detail=f"license_id={license_id}")
-
-            return {"success": True, "message": "License revoked successfully"}
 
     @app.get("/api/admin/audit-log")
     async def get_audit_log(
@@ -817,6 +619,8 @@ def create_app(config_path: Optional[Path] = None) -> FastAPI:
         private = bool(payload.get("private", False))
         if not tool or not target:
             raise HTTPException(status_code=400, detail="Tool and target are required.")
+        # Each run is a subprocess for up to ~20s; cap how many one user can start.
+        _throttle(f"diagnostics:{user.user_id or user.username}", max_attempts=10, window_seconds=60)
         try:
             # ping/traceroute block for up to ~20s: keep them off the event loop
             # so the portal (and every proxied/VNC session) stays responsive.
@@ -870,7 +674,7 @@ def create_app(config_path: Optional[Path] = None) -> FastAPI:
     # ==================== LoginLab Control Endpoints ====================
 
     LOGINLAB_URL = os.getenv("LOGINLAB_URL", "http://loginlab:5500")
-    # LoginLab has its own token: it is an intentionally vulnerable service, so
+    # LoginLab has its own token: it is a deliberately weak practice target, so
     # it must never hold PORTAL_API_SECRET (which authrecon-api trusts).
     LOGINLAB_SERVICE_TOKEN = os.getenv("LOGINLAB_SERVICE_TOKEN", "")
 
@@ -918,7 +722,7 @@ def create_app(config_path: Optional[Path] = None) -> FastAPI:
     ):
         """Enable LoginLab training environment (admin only)."""
         if not user.is_admin:
-            raise HTTPException(status_code=403, detail="Admin only. LoginLab contains intentional vulnerabilities.")
+            raise HTTPException(status_code=403, detail="Admin only. LoginLab is a deliberately weak practice target.")
 
         SECURITY_LOGGER.info(f"LoginLab ENABLED by {user.username} for {duration_minutes} minutes")
         audit.emit(audit.LOGINLAB_ENABLED, actor_username=user.username, detail=f"{duration_minutes} minutes")

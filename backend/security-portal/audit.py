@@ -10,7 +10,6 @@ Event types (use these constants):
   ROLE_CHANGED, USER_DEACTIVATED, USER_ACTIVATED
   SETUP_COMPLETED
   CREDENTIAL_REVEALED
-  LICENSE_GENERATED, LICENSE_REVOKED
   LOGINLAB_ENABLED, LOGINLAB_DISABLED
   SECURITY_NOTICE_ACKNOWLEDGED
 """
@@ -34,8 +33,6 @@ CREDENTIAL_REVEALED = "credential_revealed"
 ROLE_CHANGED = "role_changed"
 USER_DEACTIVATED = "user_deactivated"
 USER_ACTIVATED = "user_activated"
-LICENSE_GENERATED = "license_generated"
-LICENSE_REVOKED = "license_revoked"
 LOGINLAB_ENABLED = "loginlab_enabled"
 LOGINLAB_DISABLED = "loginlab_disabled"
 SECURITY_NOTICE_ACKNOWLEDGED = "security_notice_acknowledged"

@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.core.config import APP_VERSION, get_settings
-from app.api import runs, ai, scan_exports, health, artifacts, ai_assist, playbooks, auth, credentials, license as license_routes, api_keys, vnc_portal
+from app.api import runs, ai, scan_exports, health, artifacts, ai_assist, playbooks, auth, credentials, api_keys, vnc_portal
 
 _DEBUG = os.getenv("AUTHRECON_DEBUG", "false").lower() == "true"
 
@@ -71,11 +71,6 @@ def create_app() -> FastAPI:
     )
     app.include_router(ai.router, prefix=settings.api_v1_prefix)
     app.include_router(scan_exports.router, prefix=settings.api_v1_prefix)
-    app.include_router(
-        license_routes.router,
-        prefix=settings.api_v1_prefix + "/license",
-        tags=["license"]
-    )
     return app
 
 

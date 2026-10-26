@@ -20,7 +20,7 @@ backend/authrecon/backend/        authrecon-api and authrecon-worker (FastAPI, R
   alembic/versions/               database migrations
 backend/authrecon/cli/            `authrecon` CLI
 backend/authrecon-mcp/            MCP server (separate service, reached through the portal)
-backend/loginlab/                 practice login targets (intentionally vulnerable)
+backend/loginlab/                 practice login targets (fictional, deliberately weak)
 docker-compose.yml                full stack; docker-compose.dev.yml = hot-reload frontend
 install.sh                        installer
 ```

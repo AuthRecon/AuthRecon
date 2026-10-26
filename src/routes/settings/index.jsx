@@ -2,7 +2,6 @@ import React from 'react'
 import { useSearchParams } from 'react-router-dom'
 import ConnectorTabs from './components/ConnectorTabs'
 import AiMcpPanel from './components/AiMcpPanel'
-import LicensePanel from './components/LicensePanel'
 import UserManagementPanel from './components/UserManagementPanel'
 import LoginLabPanel from './components/LoginLabPanel'
 import { AccountPanel } from './components/AccountPanel'
@@ -32,9 +31,6 @@ function SettingsPage() {
         )}
         {activeTab === 'ai' && (
           <AiMcpPanel />
-        )}
-        {activeTab === 'license' && (
-          <LicensePanel />
         )}
         {activeTab === 'users' && (
           <UserManagementPanel />

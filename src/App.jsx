@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import useAuthStore from './store/authStore'
-import useLicenseStore from './store/licenseStore'
 import AuthGuard from './components/AuthGuard'
 import Login from './routes/Login'
 import Setup from './routes/Setup'
@@ -21,7 +20,6 @@ import api from './services/api'
  */
 function App() {
   const initialize = useAuthStore((state) => state.initialize)
-  const loadLicense = useLicenseStore((state) => state.load)
   const [isInitialized, setIsInitialized] = useState(null) // null = loading, true/false = loaded
   const navigate = useNavigate()
   const location = useLocation()
@@ -56,15 +54,6 @@ function App() {
   useEffect(() => {
     initialize()
   }, [initialize])
-
-  // Only with a session: the status endpoint needs one (on the login page it
-  // would just answer 401). Reloads after a sign-in.
-  const user = useAuthStore((state) => state.user)
-  useEffect(() => {
-    if (isInitialized && user) {
-      loadLicense()
-    }
-  }, [loadLicense, isInitialized, user])
 
   // Show loading while checking initialization
   if (isInitialized === null) {

@@ -13,42 +13,6 @@ const DURATION_OPTIONS = [
 
 const LOGINLAB_SCENARIOS = [
   {
-    name: 'Microsoft / Azure AD',
-    path: '/demo/microsoft',
-    username: 'user@contoso.com',
-    password: 'AzureDemo123!',
-    authType: 'OAuth/SAML',
-    color: 'from-blue-600 to-blue-700',
-    borderColor: 'border-l-blue-500',
-  },
-  {
-    name: 'Okta SSO',
-    path: '/demo/okta',
-    username: 'demo.user',
-    password: 'OktaDemo123!',
-    authType: 'SAML/OAuth',
-    color: 'from-indigo-600 to-indigo-700',
-    borderColor: 'border-l-indigo-500',
-  },
-  {
-    name: 'Google OAuth',
-    path: '/demo/google',
-    username: 'demo@example.com',
-    password: 'GoogleDemo123!',
-    authType: 'OAuth',
-    color: 'from-red-500 to-yellow-500',
-    borderColor: 'border-l-red-500',
-  },
-  {
-    name: 'Corporate SSO Portal',
-    path: '/demo/corporate-sso',
-    username: 'enterprise.user',
-    password: 'SecureDemo123!',
-    authType: 'Multi-provider',
-    color: 'from-slate-500 to-slate-600',
-    borderColor: 'border-l-slate-400',
-  },
-  {
     name: 'Basic Form Login',
     path: '/form-login',
     username: 'testuser@loginlab.local',
@@ -153,7 +117,7 @@ function LoginLabPanel() {
         <div>
           <p className="text-sm font-medium text-amber-300">Security Notice</p>
           <p className="text-sm text-amber-200/70 mt-1">
-            LoginLab contains <strong>intentional vulnerabilities</strong> for testing purposes.
+            LoginLab serves <strong>deliberately weak practice logins</strong> (fake accounts with published passwords).
             It runs on an internal Docker network only and auto-disables after the configured timeout.
             Never expose LoginLab to external networks.
           </p>

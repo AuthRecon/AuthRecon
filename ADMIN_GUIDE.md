@@ -129,7 +129,7 @@ Every service refuses to start if a required secret is missing.
 
 - Put the UI (5173) and portal (9000) behind your reverse proxy or firewall like any internal web app. Serve both from the same host name (the installer does): the sign-in is an HttpOnly cookie restricted to the same site, so a UI at `https://authrecon.example.com` with the portal at another domain cannot sign in. Behind a TLS proxy the cookies are marked `Secure` automatically when the proxy sends `X-Forwarded-Proto: https`; set `SESSION_COOKIE_SECURE=true` in `backend/security-portal/.env` to force it.
 - **Port 8001 (authrecon-api) is published on all interfaces** so the CLI and scripts can reach it. Requests on that port still need a valid API key or token, but they skip the portal layer (its per-request user checks and audit trail). Allow it with a host or network firewall only from hosts that need CLI access, or block it if nobody uses the CLI.
-- LoginLab binds to `127.0.0.1` only. It is intentionally vulnerable, so never publish it.
+- LoginLab binds to `127.0.0.1` only. Its accounts and passwords are published in the docs, so never publish it.
 - The MCP server and VNC live views publish no ports; they're reached only through the portal. The isolated browser container (`authrecon-browser`) publishes none either.
 
 ## Which targets AuthRecon may visit
@@ -241,16 +241,18 @@ curl -X DELETE -H "X-API-Key: $KEY" "http://localhost:8001/api/v1/playbooks?doma
 ```
 The same actions are available as MCP tools.
 
-## Licensing
-
-AuthRecon ships with a licensing module (`backend/authrecon/license`, **Settings › Licensing**). Validation is off by default (`LICENSE_VALIDATION_ENABLED=false`), and in that mode every feature is available and no license server is contacted. The module is optional and you can ignore it.
-
 ## Upgrading from older versions
 
 Older releases had SecBot and a web scanner. Their databases are no longer used and can be dropped once you don't need the data:
 ```bash
 docker compose exec postgres psql -U postgres -c "DROP DATABASE IF EXISTS secbot" -c "DROP ROLE IF EXISTS secbot" \
   -c "DROP DATABASE IF EXISTS scanner" -c "DROP ROLE IF EXISTS scanner"
+```
+
+Releases before 0.12.0 also had a licensing module and LoginLab demo pages styled after real identity providers; both are gone. The portal's two unused licensing tables can be dropped:
+```bash
+docker compose exec -T postgres psql -U postgres -d portal \
+  -c "DROP TABLE IF EXISTS license_activations" -c "DROP TABLE IF EXISTS client_licenses"
 ```
 
 ## Troubleshooting

@@ -17,8 +17,6 @@ const EVENT_LABELS = {
   role_changed: { label: 'Role Changed', color: 'text-orange-400' },
   user_deactivated: { label: 'User Deactivated', color: 'text-orange-400' },
   user_activated: { label: 'User Activated', color: 'text-sky-400' },
-  license_generated: { label: 'License Generated', color: 'text-sky-400' },
-  license_revoked: { label: 'License Revoked', color: 'text-orange-400' },
   loginlab_enabled: { label: 'LoginLab Enabled', color: 'text-amber-400' },
   loginlab_disabled: { label: 'LoginLab Disabled', color: 'text-slate-400' },
   security_notice_acknowledged: { label: 'Security Notice Acknowledged', color: 'text-slate-400' },
@@ -54,7 +52,7 @@ function AuditLogPanel() {
     <PanelShell
       eyebrow="Security"
       title="Audit log"
-      description="Logins, user and role changes, password resets, licenses, LoginLab and security-notice events."
+      description="Logins, user and role changes, password resets, LoginLab and security-notice events."
       actions={
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">

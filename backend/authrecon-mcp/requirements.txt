@@ -1,2 +1,4 @@
 mcp==2.3.0
 httpx==0.28.1
+# Floor for GHSA-6q48-6c7w-9gw2 (compromised emSign intermediates); pulled in by httpx/requests
+certifi>=2026.10.19

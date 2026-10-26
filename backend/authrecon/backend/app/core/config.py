@@ -8,7 +8,7 @@ from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 # Release version; must match the repo-root VERSION file (backend/authrecon/backend/tests/test_version.py).
-APP_VERSION = "0.11.0"
+APP_VERSION = "0.12.0"
 
 _ANY_URL = TypeAdapter(AnyUrl)
 

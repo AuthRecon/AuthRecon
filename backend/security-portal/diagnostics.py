@@ -69,7 +69,11 @@ class DiagnosticsManager:
             output = completed.stdout or ""
         except subprocess.TimeoutExpired as exc:
             exit_code = -1
-            output = (exc.stdout or "") + "\n[diagnostics] Command timed out"
+            # TimeoutExpired carries bytes even with text=True.
+            partial = exc.stdout or b""
+            if isinstance(partial, bytes):
+                partial = partial.decode("utf-8", errors="replace")
+            output = partial + "\n[diagnostics] Command timed out"
 
         summary = output.splitlines()[0][:200] if output else f"Completed {tool}"
 
@@ -149,12 +153,13 @@ def _validate_target(target: str) -> None:
     """
     if target.startswith("-"):
         raise ValueError(f"Invalid target '{target}': targets may not begin with '-'")
-    try:
-        ipaddress.ip_address(target)
-        return  # valid IPv4 or IPv6 literal
-    except ValueError:
-        pass
-    if not _HOSTNAME_RE.match(target):
+    if "%" not in target:  # no IPv6 zone ids: they take arbitrary text
+        try:
+            ipaddress.ip_address(target)
+            return  # valid IPv4 or IPv6 literal
+        except ValueError:
+            pass
+    if not _HOSTNAME_RE.fullmatch(target):  # fullmatch: '$' would allow a trailing newline
         raise ValueError(
             f"Invalid target '{target}': must be a hostname (e.g. example.com) "
             "or IP address (e.g. 1.2.3.4)"

@@ -9,7 +9,7 @@ from typing import List
 from dotenv import load_dotenv
 
 # Release version; must match the repo-root VERSION file (backend/authrecon/backend/tests/test_version.py).
-APP_VERSION = "0.11.0"
+APP_VERSION = "0.12.0"
 
 
 
@@ -31,10 +31,6 @@ class PortalConfig:
     user_store_path: Path
     encryption_key_path: Path
     database_url: str
-    license_server_url: str
-    license_cache_path: Path
-    license_check_interval_days: int
-    license_offline_grace_days: int
     redis_url: str
 
 
@@ -85,13 +81,6 @@ def load_config(env_path: Path | None = None) -> PortalConfig:
 
     database_url = os.getenv("PORTAL_DATABASE_URL", "sqlite:///data/portal.db")
 
-    license_server_url = os.getenv("PORTAL_LICENSE_SERVER", "")
-    license_cache_path = Path(os.getenv("PORTAL_LICENSE_CACHE", "data/license_status.json"))
-    if not license_cache_path.is_absolute():
-        license_cache_path = (Path.cwd() / license_cache_path).resolve()
-    license_cache_path.parent.mkdir(parents=True, exist_ok=True)
-    license_check_interval_days = int(os.getenv("PORTAL_LICENSE_CHECK_INTERVAL_DAYS", "14"))
-    license_offline_grace_days = int(os.getenv("PORTAL_LICENSE_OFFLINE_GRACE_DAYS", "30"))
     redis_url = os.getenv("REDIS_URL", "redis://:authrecon@authrecon-redis:6379/1")
 
     if database_url.startswith("sqlite:///"):
@@ -123,9 +112,5 @@ def load_config(env_path: Path | None = None) -> PortalConfig:
         user_store_path=user_store_path,
         encryption_key_path=encryption_key_path,
         database_url=database_url,
-        license_server_url=license_server_url,
-        license_cache_path=license_cache_path,
-        license_check_interval_days=license_check_interval_days,
-        license_offline_grace_days=license_offline_grace_days,
         redis_url=redis_url,
     )

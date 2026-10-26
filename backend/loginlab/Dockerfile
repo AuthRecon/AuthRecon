@@ -41,7 +41,7 @@ RUN --mount=type=secret,id=pip_index_url \
 # Copy application code
 COPY app/ ./app/
 
-# Run unprivileged (this service is intentionally vulnerable)
+# Run unprivileged (practice target; keep it isolated)
 RUN useradd --system --no-create-home --shell /usr/sbin/nologin loginlab
 USER loginlab
 

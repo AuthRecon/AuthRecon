@@ -94,4 +94,4 @@ These are known gaps, not oversights. Plan your deployment around them:
 
 ## LoginLab
 
-LoginLab is **intentionally vulnerable**. It runs only when its Compose profile is started, binds to `127.0.0.1`, checks the Host header against an allow-list of the AuthRecon services, uses its own token (never the main service secret), and switches itself off when its enable window expires. Never publish it.
+LoginLab is a **deliberately weak practice target**: fictional logins with published passwords. It runs only when its Compose profile is started, binds to `127.0.0.1`, checks the Host header against an allow-list of the AuthRecon services, uses its own token (never the main service secret), and switches itself off when its enable window expires. Never publish it.

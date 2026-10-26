@@ -2,8 +2,8 @@
 LoginLab - AuthRecon Training Ground
 FastAPI application providing multiple authentication scenarios for testing.
 
-SECURITY WARNING: This application contains intentional vulnerabilities for testing.
-It should NEVER be exposed externally and should only accept connections from
+SECURITY WARNING: This is a deliberately simple practice target (fake users,
+weak demo passwords). It should NEVER be exposed externally and should only accept connections from
 AuthRecon services via service token authentication.
 """
 import hmac
@@ -163,7 +163,7 @@ class SecurityMiddleware(BaseHTTPMiddleware):
 app = FastAPI(
     title="LoginLab",
     description="AuthRecon training ground with multiple authentication scenarios. "
-                "WARNING: Contains intentional vulnerabilities for testing purposes.",
+                "Practice target only; never expose it outside the stack.",
     version="1.0.0",
 )
 
@@ -562,43 +562,6 @@ async def multirole_dashboard(request: Request):
     )
 
 
-@app.api_route("/lab/multirole/search", methods=["GET", "POST"], response_class=HTMLResponse)
-async def multirole_search(request: Request):
-    session = get_multirole_session(request)
-    if not session:
-        return RedirectResponse(url="/lab/multirole", status_code=303)
-
-    query = ""
-    results = []
-    error_text = None
-
-    if request.method == "POST":
-        form = await request.form()
-        query = form.get("query", "")
-        lower_q = query.lower()
-        markers = ["'", "\"", " or ", "--", ";", "/*", "*/", "union", "select"]
-        if any(marker in lower_q for marker in markers):
-            error_text = f"You have an error in your SQL syntax near \"{query}\""
-        else:
-            results = [
-                {"name": f"Asset matching: {query}", "type": "server"},
-                {"name": f"Another result for: {query}", "type": "application"},
-            ]
-
-    status_code = 500 if error_text else 200
-    return _multirole_template(
-        "multirole_search.html",
-        request,
-        {
-            "user": session,
-            "query": query,
-            "results": results,
-            "error_text": error_text,
-        },
-        status_code=status_code,
-    )
-
-
 @app.get("/lab/multirole/logout")
 async def multirole_logout(request: Request):
     session_id = request.cookies.get("multirole_session")
@@ -664,90 +627,10 @@ async def protected_action(request: Request, session: dict = Depends(require_ses
     )
 
 
-@app.get("/protected/vuln-sql", response_class=HTMLResponse)
-async def protected_vuln_sql_page(request: Request, session: dict = Depends(require_session)):
-    """
-    Intentionally vulnerable SQL echo endpoint for scanner validation.
-    Only available to authenticated sessions.
-    """
-    return templates.TemplateResponse(
-        "vuln_sql.html",
-        {
-            "request": request,
-            "user": session,
-            "last_input": "",
-            "error_text": None,
-        },
-    )
-
-
-@app.post("/protected/vuln-sql", response_class=HTMLResponse)
-async def protected_vuln_sql_submit(request: Request, session: dict = Depends(require_session)):
-    """
-    Simulate SQL error responses when suspicious input is provided so scanners can
-    detect error-based SQL injection signals safely.
-    """
-    form_data = await request.form()
-    query = form_data.get("query", "")
-    lower_q = query.lower()
-
-    # If the payload contains common SQLi markers, emit an error-style response body.
-    error_text = None
-    markers = ["'", "\"", " or ", "--", ";", "/*", "*/"]
-    if any(marker in lower_q for marker in markers):
-        error_text = f"postgresql: you have an error in your sql syntax near \"{query}\""
-
-    return templates.TemplateResponse(
-        "vuln_sql.html",
-        {
-            "request": request,
-            "user": session,
-            "last_input": query,
-            "error_text": error_text,
-        },
-        status_code=500 if error_text else 200,
-    )
-
-
-@app.get("/protected/vuln-xss", response_class=HTMLResponse)
-async def protected_vuln_xss_page(request: Request, session: dict = Depends(require_session)):
-    """
-    Intentionally reflects user input without encoding for scanner validation.
-    Only available to authenticated sessions.
-    """
-    return templates.TemplateResponse(
-        "vuln_xss.html",
-        {
-            "request": request,
-            "user": session,
-            "reflected_comment": "",
-        },
-    )
-
-
-@app.post("/protected/vuln-xss", response_class=HTMLResponse)
-async def protected_vuln_xss_submit(request: Request, session: dict = Depends(require_session)):
-    """
-    Reflect user-supplied content back into the page unescaped so scanners can detect XSS.
-    """
-    form_data = await request.form()
-    comment = form_data.get("comment", "")
-
-    return templates.TemplateResponse(
-        "vuln_xss.html",
-        {
-            "request": request,
-            "user": session,
-            "reflected_comment": comment,
-        },
-        status_code=200,
-    )
-
-
 # ==================== Scenario Routes ====================
 
 # Import scenario routers
-from .api.scenarios import basic_auth, form_login, multi_step, sso_redirect, ldap_login, api_auth, domain_login, covert_auth, demo_pages
+from .api.scenarios import basic_auth, form_login, multi_step, sso_redirect, ldap_login, api_auth, domain_login, covert_auth
 
 app.include_router(basic_auth.router, tags=["scenarios"])
 app.include_router(form_login.router, tags=["scenarios"])
@@ -757,7 +640,6 @@ app.include_router(ldap_login.router, tags=["scenarios"])
 app.include_router(api_auth.router, tags=["scenarios"])
 app.include_router(domain_login.router, tags=["scenarios"])
 app.include_router(covert_auth.router, tags=["scenarios"])
-app.include_router(demo_pages.router, tags=["demo"])
 
 
 # ==================== Telemetry Routes ====================

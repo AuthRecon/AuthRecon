@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="authrecon-cli",
-    version="0.11.0",
+    version="0.12.0",
     packages=find_packages(),
     install_requires=[
         "click>=8.1.0",

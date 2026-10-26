@@ -28,6 +28,17 @@ The installer asks for the address you'll browse to, generates unique secrets, b
 5. Click **Verify**. AuthRecon replays the script in a clean browser, the same way WAS does. (This counts as one more login on the account.)
 6. Download the `.side` and enter the card's values in your WAS scan's *Selenium authentication* settings.
 
+## What you get
+
+For each successful run:
+- **Selenium `.side` login script**, replay-verified, ready to upload to Tenable WAS.
+- **WAS settings:** login page, page to verify, and the regex pattern to verify.
+- **Scan readiness:** a grade plus starting settings (URLs to exclude, session cookie, performance).
+- **Evidence:** timeline, step-by-step screenshots, HAR capture, cookie and security-header findings.
+- **Exports:** HAR, curl, Postman, Burp and ZAP files from the captured session.
+
+For a failed run you get the same timeline and screenshots showing where it stopped, plus guidance on what to change.
+
 ## What it handles
 
 | Login type | Status |
@@ -45,7 +56,7 @@ Also included:
 - **Exports:** HAR, curl, Postman, Burp and ZAP from the captured session.
 - **Scan Analyzer (preview):** upload a WAS scan's debug zip or JSON export after a failed or thin scan; it explains what went wrong (logged out, timeouts, WAF, URLs skipped and why) and lists the settings to change. Rules only, no AI needed.
 - **Secondary tools:** Atlas (a map of targets your runs touched), Network Tools (ping/traceroute/DNS from the server).
-- **LoginLab:** practice targets inside the stack (form, two-step, Basic, JSON API, SSO-style redirect, LDAP-style, form + domain, and a deliberately hard "covert" form), plus Microsoft/Okta/Google look-alike demo pages. Off by default, loopback-only.
+- **LoginLab:** practice targets inside the stack (form, two-step, Basic, JSON API, SSO-style redirect, LDAP-style, form + domain, and a deliberately hard "covert" form), all fictional companies with published test passwords. Off by default, loopback-only.
 
 ## Architecture
 
@@ -123,4 +134,4 @@ AuthRecon has no built-in LLM. To use AI, connect your own MCP client (Claude Co
 
 ## License
 
-Copyright 2024-2026 The AuthRecon Authors. Licensed under the Apache License 2.0; see [LICENSE](./LICENSE) and [THIRD_PARTY_NOTICES.txt](./THIRD_PARTY_NOTICES.txt). Every feature is free. The in-app licensing module is off by default and never limits anything (see [ADMIN_GUIDE](./ADMIN_GUIDE.md#licensing)).
+Copyright 2024-2026 The AuthRecon Authors. Licensed under the Apache License 2.0; see [LICENSE](./LICENSE) and [THIRD_PARTY_NOTICES.txt](./THIRD_PARTY_NOTICES.txt). Every feature is free, with no license keys and no calls home.
