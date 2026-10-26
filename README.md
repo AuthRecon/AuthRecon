@@ -123,4 +123,4 @@ AuthRecon has no built-in LLM. To use AI, connect your own MCP client (Claude Co
 
 ## License
 
-Copyright 2024-2026 Auth Recon Inc. Licensed under the Apache License 2.0; see [LICENSE](./LICENSE) and [THIRD_PARTY_NOTICES.txt](./THIRD_PARTY_NOTICES.txt). Every feature is free. The in-app licensing module is off by default and never limits anything (see [ADMIN_GUIDE](./ADMIN_GUIDE.md#licensing)).
+Copyright 2024-2026 The AuthRecon Authors. Licensed under the Apache License 2.0; see [LICENSE](./LICENSE) and [THIRD_PARTY_NOTICES.txt](./THIRD_PARTY_NOTICES.txt). Every feature is free. The in-app licensing module is off by default and never limits anything (see [ADMIN_GUIDE](./ADMIN_GUIDE.md#licensing)).
