@@ -8,4 +8,4 @@ python-jose[cryptography]==3.4.0
 passlib[bcrypt]==1.7.4
 httpx==0.25.2
 # Floor for GHSA-6q48-6c7w-9gw2 (compromised emSign intermediates); pulled in by httpx/requests
-certifi>=2026.10.19
+certifi>=2026.10.23
