@@ -51,7 +51,7 @@ COPY docker/nginx-frontend.conf /tmp/nginx-frontend.conf
 RUN sed -i "s#__CONNECT_SRC__#${VITE_API_URL} ${VITE_WS_URL}#g" /tmp/nginx-frontend.conf \
     && ! grep -q "__CONNECT_SRC__" /tmp/nginx-frontend.conf
 
-FROM nginxinc/nginx-unprivileged:1.27-alpine
+FROM nginxinc/nginx-unprivileged:1.31-alpine
 
 COPY --from=build /tmp/nginx-frontend.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist /usr/share/nginx/html
