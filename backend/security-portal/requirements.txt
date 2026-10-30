@@ -18,4 +18,4 @@ redis==5.0.8
 pyotp==2.10.0
 segno==1.6.6
 # Floor for GHSA-6q48-6c7w-9gw2 (compromised emSign intermediates); pulled in by httpx/requests
-certifi>=2026.10.19
+certifi>=2026.10.23
