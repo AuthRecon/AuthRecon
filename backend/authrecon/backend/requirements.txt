@@ -19,6 +19,6 @@ httpx==0.28.1
 beautifulsoup4==4.12.3
 lxml==6.1.0
 playwright==1.64.0
-websockify==0.11.0
+websockify==0.13.0
 # Floor for GHSA-6q48-6c7w-9gw2 (compromised emSign intermediates); pulled in by httpx/requests
 certifi>=2026.10.19
