@@ -3,7 +3,7 @@ uvicorn[standard]==0.54.0
 pydantic==2.14.1
 pydantic-settings==2.16.0
 python-multipart==0.0.31
-sqlalchemy==2.0.32
+sqlalchemy==2.1.6
 alembic==1.13.2
 psycopg2-binary==2.9.10
 rq==1.16.2
