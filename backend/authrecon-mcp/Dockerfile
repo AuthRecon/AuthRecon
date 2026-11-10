@@ -28,6 +28,10 @@ ENV PIP_CERT=/etc/ssl/certs/ca-certificates.crt \
 
 WORKDIR /app
 
+# OS security updates newer than the base image.
+RUN apt-get update && apt-get upgrade -y --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY requirements.txt .
 # Optional private package index (docker-compose.mirror.yml). A BuildKit
 # secret, so the URL and its credentials never reach an image layer.

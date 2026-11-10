@@ -5,7 +5,7 @@ REST API with JSON payload and JWT token response.
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Request, HTTPException, status
 from pydantic import BaseModel
-from jose import jwt
+import jwt
 
 from ...main import verify_credentials, telemetry
 
@@ -136,7 +136,7 @@ async def api_auth_verify(request: Request):
             "role": payload.get("role"),
             "expires_at": payload.get("exp"),
         }
-    except jwt.JWTError as e:
+    except jwt.PyJWTError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Invalid token: {str(e)}",

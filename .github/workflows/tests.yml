@@ -27,6 +27,9 @@ jobs:
           - service: authrecon-mcp
             dir: backend/authrecon-mcp
             python: "3.12"
+          - service: loginlab
+            dir: backend/loginlab
+            python: "3.12"
     defaults:
       run:
         working-directory: ${{ matrix.dir }}
@@ -37,7 +40,8 @@ jobs:
           python-version: ${{ matrix.python }}
           cache: pip
           cache-dependency-path: ${{ matrix.dir }}/requirements.txt
-      - run: pip install -r requirements.txt pytest pytest-asyncio
+      # httpx: the test client needs it (loginlab does not ship it).
+      - run: pip install -r requirements.txt pytest pytest-asyncio httpx
       # Unit tests only: SQLite and mocked transports, no browsers or services.
       - run: python -m pytest -q tests
       # Known vulnerabilities in the service's pinned dependencies.

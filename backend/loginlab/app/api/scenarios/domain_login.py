@@ -37,7 +37,7 @@ async def domain_form_page(request: Request):
         return RedirectResponse(url="/form-login-domain/dashboard", status_code=302)
 
     return templates.TemplateResponse(
-        "domain_login.html",
+        request, "domain_login.html",
         {
             "request": request,
             "domains": DOMAINS,
@@ -58,7 +58,7 @@ async def domain_form_submit(
     """Handle login form submission with domain select and required checkbox."""
     if consent is None:
         return templates.TemplateResponse(
-            "domain_login.html",
+            request, "domain_login.html",
             {
                 "request": request,
                 "domains": DOMAINS,
@@ -103,7 +103,7 @@ async def domain_form_submit(
             run_id=request.headers.get("X-AuthRecon-Run-ID"),
         )
         return templates.TemplateResponse(
-            "domain_login.html",
+            request, "domain_login.html",
             {
                 "request": request,
                 "domains": DOMAINS,
@@ -146,7 +146,7 @@ async def domain_form_dashboard(request: Request):
     if not session:
         return RedirectResponse(url="/form-login-domain", status_code=302)
     return templates.TemplateResponse(
-        "domain_dashboard.html",
+        request, "domain_dashboard.html",
         {
             "request": request,
             "user": session,

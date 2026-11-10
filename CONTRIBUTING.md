@@ -45,6 +45,7 @@ Things to know:
 (cd backend/authrecon/backend && python -m pytest tests)
 (cd backend/security-portal  && python -m pytest tests)
 (cd backend/authrecon-mcp    && python -m pytest tests)
+(cd backend/loginlab         && python -m pytest tests)   # needs: pip install httpx
 npm ci && npm test && npm run build
 ```
 CI (`.github/workflows/tests.yml`) runs the same steps, plus `pip-audit`, `npm audit` and a gitleaks secret scan. Regenerate `package-lock.json` with npm 11 or later; npm 10 can write a lockfile that `npm ci` then rejects. The unit tests use SQLite and mocks: no browsers, no Docker. Anything touching login automation also needs a real run against LoginLab, then **Verify** on the resulting `.side`. A `.side` that doesn't replay in a clean browser doesn't work in WAS.

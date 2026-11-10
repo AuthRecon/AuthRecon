@@ -29,7 +29,7 @@ async def ldap_login_page(request: Request):
         return RedirectResponse(url="/ldap-login/dashboard", status_code=302)
 
     return templates.TemplateResponse(
-        "ldap_login.html",
+        request, "ldap_login.html",
         {"request": request},
     )
 
@@ -74,7 +74,7 @@ async def ldap_login_submit(
         )
 
         return templates.TemplateResponse(
-            "ldap_login.html",
+            request, "ldap_login.html",
             {
                 "request": request,
                 "error": "Invalid credentials. Try DOMAIN\\username or email format.",
@@ -123,7 +123,7 @@ async def ldap_login_dashboard(request: Request):
         return RedirectResponse(url="/ldap-login", status_code=302)
 
     return templates.TemplateResponse(
-        "ldap_dashboard.html",
+        request, "ldap_dashboard.html",
         {
             "request": request,
             "user": session,

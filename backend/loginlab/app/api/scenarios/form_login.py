@@ -20,7 +20,7 @@ async def form_login_page(request: Request):
 
     # Show login form
     return templates.TemplateResponse(
-        "form_login.html",
+        request, "form_login.html",
         {"request": request},
     )
 
@@ -65,7 +65,7 @@ async def form_login_submit(
         )
 
         return templates.TemplateResponse(
-            "form_login.html",
+            request, "form_login.html",
             {
                 "request": request,
                 "error": "Invalid username or password. Please try again.",
@@ -109,7 +109,7 @@ async def form_login_dashboard(request: Request):
         return RedirectResponse(url="/form-login", status_code=302)
 
     return templates.TemplateResponse(
-        "form_dashboard.html",
+        request, "form_dashboard.html",
         {
             "request": request,
             "user": session,

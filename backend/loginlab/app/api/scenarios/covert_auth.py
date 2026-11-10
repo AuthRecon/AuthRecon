@@ -34,7 +34,7 @@ async def covert_auth_page(request: Request):
         return RedirectResponse(url="/covert-auth/dashboard", status_code=302)
 
     return templates.TemplateResponse(
-        "covert_login.html",
+        request, "covert_login.html",
         {"request": request, "error": None},
     )
 
@@ -103,7 +103,7 @@ async def covert_auth_dashboard(request: Request):
         return RedirectResponse(url="/covert-auth", status_code=302)
 
     return templates.TemplateResponse(
-        "covert_dashboard.html",
+        request, "covert_dashboard.html",
         {"request": request, "user": session},
     )
 

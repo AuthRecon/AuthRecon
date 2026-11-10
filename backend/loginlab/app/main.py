@@ -9,6 +9,7 @@ AuthRecon services via service token authentication.
 import hmac
 import os
 import secrets
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -19,7 +20,6 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from fastapi import Depends
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from .scenarios import SCENARIOS, get_scenario
@@ -159,12 +159,24 @@ class SecurityMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Log what was loaded on startup; clear sessions on shutdown."""
+    print("LoginLab starting up...")
+    print(f"Loaded {len(SCENARIOS)} test scenarios")
+    print(f"Loaded {len(TEST_USERS)} test users")
+    yield
+    print("LoginLab shutting down...")
+    SESSIONS.clear()
+
+
 # Initialize FastAPI app
 app = FastAPI(
     title="LoginLab",
     description="AuthRecon training ground with multiple authentication scenarios. "
                 "Practice target only; never expose it outside the stack.",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 # Security middleware (must be added first)
@@ -372,10 +384,10 @@ def clear_multirole_session(session_id: Optional[str]) -> None:
 async def index(request: Request):
     """Landing page with scenario index."""
     return templates.TemplateResponse(
-        "index.html",
+        request, "index.html",
         {
             "request": request,
-            "scenarios": [s.dict() for s in SCENARIOS.values()],
+            "scenarios": [s.model_dump() for s in SCENARIOS.values()],
             "test_users": [
                 {
                     "username": k,
@@ -392,7 +404,7 @@ async def index(request: Request):
 @app.get("/scenarios", response_model=List[ScenarioInfo])
 async def list_scenarios():
     """List all available test scenarios."""
-    return [s.dict() for s in SCENARIOS.values()]
+    return [s.model_dump() for s in SCENARIOS.values()]
 
 
 @app.get("/scenarios/{scenario_id}", response_model=ScenarioInfo)
@@ -401,7 +413,7 @@ async def get_scenario_info(scenario_id: str):
     scenario = get_scenario(scenario_id)
     if not scenario:
         raise HTTPException(status_code=404, detail="Scenario not found")
-    return scenario.dict()
+    return scenario.model_dump()
 
 
 @app.get("/health")
@@ -513,7 +525,7 @@ def _multirole_template(name: str, request: Request, context: dict, status_code:
         "accounts": MULTIROLE_ACCOUNTS,
         **context,
     }
-    return templates.TemplateResponse(name, payload, status_code=status_code)
+    return templates.TemplateResponse(request, name, payload, status_code=status_code)
 
 
 @app.get("/lab/multirole", response_class=HTMLResponse)
@@ -584,7 +596,7 @@ def require_session(request: Request) -> dict:
 async def protected_page(request: Request, session: dict = Depends(require_session)):
     """Simple protected page to verify authenticated access works."""
     return templates.TemplateResponse(
-        "protected.html",
+        request, "protected.html",
         {
             "request": request,
             "user": session,
@@ -671,20 +683,3 @@ async def list_telemetry(
         "offset": offset,
         "entries": entries,
     }
-
-
-# ==================== Startup/Shutdown Events ====================
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize resources on startup."""
-    print("LoginLab starting up...")
-    print(f"Loaded {len(SCENARIOS)} test scenarios")
-    print(f"Loaded {len(TEST_USERS)} test users")
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Clean up resources on shutdown."""
-    print("LoginLab shutting down...")
-    SESSIONS.clear()

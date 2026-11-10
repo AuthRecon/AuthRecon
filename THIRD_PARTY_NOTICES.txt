@@ -46,7 +46,6 @@ cryptography                 Apache-2.0 OR BSD-3-Clause
                                            https://github.com/pyca/cryptography
 bcrypt                       Apache-2.0    https://github.com/pyca/bcrypt
 passlib                      BSD-3-Clause  https://foss.heptapod.net/python-libs/passlib
-python-jose                  MIT           https://github.com/mpdavis/python-jose
 PyJWT                        MIT           https://github.com/jpadilla/pyjwt
 itsdangerous / Jinja2        BSD-3-Clause  https://github.com/pallets
 SlowAPI                      MIT           https://github.com/laurentS/slowapi

@@ -72,7 +72,7 @@ Be aware of what this means in practice:
 
 ## Supply chain
 
-Every pull request runs the unit tests plus `pip-audit` on each Python service, `npm audit` on the browser bundle, and a gitleaks secret scan; GitHub Actions are pinned to commit SHAs, and Dependabot proposes dependency updates. The UI bundles its own fonts and loads nothing from third-party hosts.
+Every pull request runs the unit tests plus `pip-audit` on each Python service, `npm audit` on the browser bundle, and a gitleaks secret scan; GitHub Actions are pinned to commit SHAs, and Dependabot proposes dependency updates. Image builds install the operating system's pending security updates, and the portal and UI images carry no compiler toolchain. The UI bundles its own fonts and loads nothing from third-party hosts.
 
 ## Untrusted target pages
 

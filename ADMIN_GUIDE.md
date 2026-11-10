@@ -70,7 +70,7 @@ docker run --rm -v "$PWD/certs:/certs:ro" python:3.12-slim python -c "import glo
 
 **Existing install:** put the certificate in `certs/`, or create both `.build-secrets/pip_index_url` and `.build-secrets/npmrc` (leave one empty if you only need the other; mode 0600). For the mirror, also add the `COMPOSE_FILE=...` line above to `.env`. Then run `docker compose up -d --build`.
 
-**Other downloads during the build.** Docker Desktop or the Docker daemon pulls the base images itself, so give it your proxy settings if those pulls fail. The worker image also downloads Chromium for Playwright and noVNC (from GitHub, checksum-verified). Neither goes through the mirror, so those hosts must be reachable, through the inspecting proxy if need be.
+**Other downloads during the build.** Docker Desktop or the Docker daemon pulls the base images itself, so give it your proxy settings if those pulls fail. The worker image also downloads Chromium for Playwright and noVNC (from GitHub, checksum-verified). Every image also installs operating-system security updates while it builds, from the Debian package servers (`deb.debian.org`) and, for the UI image, Alpine's (`dl-cdn.alpinelinux.org`). None of these go through the mirror, so those hosts must be reachable, through the inspecting proxy if need be.
 
 ## Upgrade
 
@@ -81,6 +81,8 @@ docker compose logs authrecon-worker | grep -i "alembic\|listening"
 ```
 
 Never run `docker compose down -v`: it deletes the database and artifact volumes. Take a [database dump](#back-up) before upgrading.
+
+**Upgrading to 0.12.1:** a security update of dependencies and base images, with no migrations or setting changes, and nobody is signed out. Build with `docker compose build --pull` before `docker compose up -d` so Docker fetches the current base images instead of reusing cached ones. Rebuilding this way every few weeks also picks up new operating-system and browser fixes between releases.
 
 **Upgrading to 0.11:**
 - Everyone is signed out once: sessions moved from browser storage to an HttpOnly cookie. Users sign in again; nothing else changes for them.

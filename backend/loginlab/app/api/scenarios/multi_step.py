@@ -17,7 +17,7 @@ EMAIL_TOKENS = {}
 async def multi_step_start(request: Request):
     """Step 1: Email entry."""
     return templates.TemplateResponse(
-        "multi_step_email.html",
+        request, "multi_step_email.html",
         {"request": request},
     )
 
@@ -53,7 +53,7 @@ async def multi_step_email_submit(
     )
 
     return templates.TemplateResponse(
-        "multi_step_password.html",
+        request, "multi_step_password.html",
         {
             "request": request,
             "email": email,
@@ -74,7 +74,7 @@ async def multi_step_password_submit(
     email = EMAIL_TOKENS.get(state)
     if not email:
         return templates.TemplateResponse(
-            "multi_step_email.html",
+            request, "multi_step_email.html",
             {
                 "request": request,
                 "error": "Session expired. Please start again.",
@@ -106,7 +106,7 @@ async def multi_step_password_submit(
         )
 
         return templates.TemplateResponse(
-            "multi_step_password.html",
+            request, "multi_step_password.html",
             {
                 "request": request,
                 "email": email,
@@ -158,7 +158,7 @@ async def multi_step_dashboard(request: Request):
         return RedirectResponse(url="/multi-step", status_code=302)
 
     return templates.TemplateResponse(
-        "multi_step_dashboard.html",
+        request, "multi_step_dashboard.html",
         {
             "request": request,
             "user": session,

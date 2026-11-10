@@ -38,7 +38,7 @@ async def sso_redirect_authorize(request: Request, state: str):
         return HTMLResponse("Invalid state parameter", status_code=400)
 
     return templates.TemplateResponse(
-        "sso_redirect_login.html",
+        request, "sso_redirect_login.html",
         {
             "request": request,
             "state": state,
@@ -77,7 +77,7 @@ async def sso_redirect_authorize_submit(
         )
 
         return templates.TemplateResponse(
-            "sso_redirect_login.html",
+            request, "sso_redirect_login.html",
             {
                 "request": request,
                 "state": state,
@@ -139,7 +139,7 @@ async def sso_redirect_home(request: Request):
         return RedirectResponse(url="/sso-redirect", status_code=302)
 
     return templates.TemplateResponse(
-        "sso_redirect_dashboard.html",
+        request, "sso_redirect_dashboard.html",
         {
             "request": request,
             "user": session,
