@@ -52,7 +52,7 @@ RUN sed -i "s#__CONNECT_SRC__#${VITE_API_URL} ${VITE_WS_URL}#g" /tmp/nginx-front
     && ! grep -q "__CONNECT_SRC__" /tmp/nginx-frontend.conf
 
 # nginx stable line: its tags keep getting rebuilt with OS security updates.
-FROM nginxinc/nginx-unprivileged:1.30-alpine
+FROM nginxinc/nginx-unprivileged:1.31-alpine
 
 # OS security updates newer than the base image, then back to the nginx user.
 USER root
